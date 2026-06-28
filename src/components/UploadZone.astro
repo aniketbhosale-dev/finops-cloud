@@ -205,38 +205,54 @@
     errorDiv?.classList.add('hidden');
   }
 
-  async function handleFileUpload(file: File, providerOverride?: string) {
+  async function handleFileUpload(file: File, providerOverride?: string, retryCount = 0): Promise<void> {
     if (!file.name.endsWith('.csv')) {
       showError('Invalid file format. Please upload a CSV billing report.');
       return;
     }
 
     const providerToUse = (providerOverride || currentProvider).toLowerCase();
-    console.log('[UploadZone] provider:', providerToUse, 'file:', file.name);
+    if (!providerToUse) {
+      showError('Please select a cloud provider first.');
+      return;
+    }
+
+    console.log('[UploadZone] provider:', providerToUse, 'file:', file.name, 'attempt:', retryCount + 1);
 
     showLoading();
     hideError();
 
+    const maxRetries = 2;
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('provider', providerToUse);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
       const response = await fetch('/api/analyze', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const text = await response.text();
       let data;
       try {
         data = JSON.parse(text);
       } catch {
-        throw new Error('Invalid response from server. Please try again.');
+        throw new Error('Invalid response from server. The file may be too large or the server encountered an internal error.');
       }
 
       if (!response.ok) {
-        throw new Error(data.error || `Server error (${response.status}).`);
+        throw new Error(data.error || `Server error (${response.status}). Please check your CSV format.`);
+      }
+
+      if (!data || typeof data !== 'object') {
+        throw new Error('Empty or malformed response from server.');
       }
 
       hideLoading();
@@ -248,7 +264,22 @@
 
     } catch (err: any) {
       console.error('[UploadZone] Error:', err);
-      showError(err.message || 'Network error occurred while analyzing file.');
+
+      if (err.name === 'AbortError') {
+        if (retryCount < maxRetries) {
+          showError(`Request timed out. Retrying... (${retryCount + 1}/${maxRetries})`);
+          await new Promise(r => setTimeout(r, 1500));
+          return handleFileUpload(file, providerOverride, retryCount + 1);
+        }
+        showError('Request timed out after multiple attempts. The file may be too large. Try a smaller CSV file.');
+      } else if (retryCount < maxRetries && (err.message.includes('network') || err.message.includes('Network') || err.message.includes('fetch'))) {
+        showError(`Network error. Retrying... (${retryCount + 1}/${maxRetries})`);
+        await new Promise(r => setTimeout(r, 1500));
+        return handleFileUpload(file, providerOverride, retryCount + 1);
+      } else {
+        showError(err.message || 'An unexpected error occurred while analyzing the file.');
+      }
+
       hideLoading();
     }
   }

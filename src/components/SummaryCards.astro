@@ -1,37 +1,28 @@
 ---
-// SummaryCards.astro - Executive cost overview with key metrics
+// SummaryCards.astro - Executive cost overview with richer metrics
 ---
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="summary-cards-container">
-  <!-- Total Monthly Spend - Hero Card -->
+  <!-- Monthly Spend Hero -->
   <div class="sm:col-span-2 glass-panel rounded-3xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-lg border border-slate-200/60 dark:border-slate-800/60">
     <div class="flex justify-between items-start">
       <div class="space-y-3">
         <div class="flex items-center space-x-2">
-          <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            Monthly Spend
-          </p>
+          <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Monthly Spend</p>
           <span class="px-2 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider" id="provider-pill">-</span>
         </div>
-        <h3 class="text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight" id="mtd-cost">
-          $0
-        </h3>
+        <h3 class="text-4xl font-extrabold font-display text-slate-900 dark:text-white tracking-tight" id="mtd-cost">$0</h3>
         <div class="flex items-center space-x-4 text-xs">
           <span class="text-slate-500 dark:text-slate-400">Daily avg: <span class="font-semibold text-slate-700 dark:text-slate-300" id="daily-avg">$0</span></span>
-          <span class="text-slate-500 dark:text-slate-400">Records: <span class="font-semibold text-slate-700 dark:text-slate-300" id="record-count">0</span></span>
+          <span class="text-slate-500 dark:text-slate-400">Days: <span class="font-semibold text-slate-700 dark:text-slate-300" id="record-count">0</span></span>
         </div>
+        <div class="flex items-center space-x-1.5 mt-1" id="spend-trend-indicator"></div>
       </div>
       <div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 rounded-2xl">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
-    </div>
-    <div class="absolute bottom-0 right-0 opacity-[0.04] pointer-events-none -z-10 translate-x-6 translate-y-6">
-      <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="60" cy="60" r="50" stroke="currentColor" stroke-width="12"></circle>
-        <path d="M60 10 A50 50 0 0 1 110 60" stroke="currentColor" stroke-width="12" stroke-linecap="round"></path>
-      </svg>
     </div>
   </div>
 
@@ -56,6 +47,7 @@
       <div class="w-full bg-slate-100 dark:bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
         <div class="h-full rounded-full transition-all duration-700 ease-out" id="budget-progress-bar" style="width: 0%"></div>
       </div>
+      <div class="text-[9px] text-slate-400 dark:text-slate-500" id="budget-remaining"></div>
     </div>
   </div>
 
@@ -75,8 +67,9 @@
       </div>
       <div class="flex items-center space-x-1.5 text-[10px] text-slate-400 dark:text-slate-500">
         <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-        <span>Confidence: <span class="font-semibold text-slate-600 dark:text-slate-400" id="forecast-confidence">0%</span></span>
+        <span>Conf: <span class="font-semibold text-slate-600 dark:text-slate-400" id="forecast-confidence">0%</span></span>
       </div>
+      <div class="text-[9px] text-slate-400 dark:text-slate-500" id="forecast-range"></div>
     </div>
   </div>
 
@@ -94,24 +87,27 @@
         <span class="text-[10px] text-slate-400 dark:text-slate-500 ml-1">/100</span>
       </div>
       <span class="text-[10px] font-bold uppercase tracking-wider" id="finops-grade">-</span>
+      <div class="text-[9px] text-slate-400 dark:text-slate-500" id="finops-breakdown"></div>
     </div>
   </div>
 
-  <!-- Potential Savings -->
+  <!-- Waste & Savings -->
   <div class="sm:col-span-2 lg:col-span-1 glass-panel rounded-3xl p-5 relative overflow-hidden transition-all duration-300 hover:shadow-lg">
     <div class="space-y-3">
       <div class="flex items-center justify-between">
-        <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Est. Savings</p>
-        <div class="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 rounded-xl">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+        <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Waste Found</p>
+        <div class="p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-500 rounded-xl">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
         </div>
       </div>
       <div>
-        <span class="text-2xl font-extrabold font-display text-emerald-600 dark:text-emerald-400" id="savings-est">$0</span>
-        <span class="text-[10px] text-slate-400 dark:text-slate-500 ml-1">/mo</span>
+        <span class="text-2xl font-extrabold font-display text-rose-600 dark:text-rose-400" id="waste-total">$0</span>
+        <span class="text-[10px] text-slate-400 dark:text-slate-500 ml-1" id="waste-ratio">(0%)</span>
       </div>
-      <div class="text-[10px] text-slate-400 dark:text-slate-500">
-        <span class="font-semibold text-slate-600 dark:text-slate-400" id="rec-count">0</span> recommendations
+      <div class="space-y-1 text-[9px]" id="waste-breakdown"></div>
+      <div class="border-t border-slate-200/50 dark:border-slate-800/40 pt-2">
+        <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400" id="savings-est">$0</span>
+        <span class="text-[10px] text-slate-400 dark:text-slate-500 ml-1">potential savings/mo</span>
       </div>
     </div>
   </div>
@@ -130,22 +126,30 @@
     const customEvent = e as CustomEvent<{ data: AnalysisResults }>;
     const data = customEvent.detail.data;
 
-    // 1. Total spend hero
+    // 1. Monthly spend
     const mtdCostEl = document.getElementById('mtd-cost');
     if (mtdCostEl) mtdCostEl.textContent = fmt(data.currentMonthSpend);
 
-    // Daily average
     const dailyAvgEl = document.getElementById('daily-avg');
     if (dailyAvgEl) {
       const days = Object.keys(data.dailySpend).length || 1;
       dailyAvgEl.textContent = fmtCompact(data.currentMonthSpend / days);
     }
 
-    // Record count (from breakdown)
     const recordCountEl = document.getElementById('record-count');
-    if (recordCountEl) {
-      const totalRecords = Object.values(data.breakdown.service).reduce((s, v) => s + v, 0) > 0 ? '-' : '0';
-      recordCountEl.textContent = Object.keys(data.dailySpend).length + ' days';
+    if (recordCountEl) recordCountEl.textContent = Object.keys(data.dailySpend).length + ' days';
+
+    // Trend indicator
+    const trendIndicator = document.getElementById('spend-trend-indicator');
+    if (trendIndicator && data.trend) {
+      const t = data.trend;
+      const sign = t.dailyChangeRate >= 0 ? '+' : '';
+      const icon = t.direction === 'increasing'
+        ? '<svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>'
+        : t.direction === 'decreasing'
+          ? '<svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>'
+          : '<svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"></path></svg>';
+      trendIndicator.innerHTML = `${icon}<span class="text-xs ${t.direction === 'increasing' ? 'text-rose-500' : t.direction === 'decreasing' ? 'text-emerald-500' : 'text-slate-400'}">${sign}${fmtCompact(t.dailyChangeRate)}/day</span>`;
     }
 
     // Provider pill
@@ -159,11 +163,12 @@
       else if (data.provider === 'gcp') providerPill.classList.add('text-blue-700', 'bg-blue-100', 'dark:text-blue-400', 'dark:bg-blue-950/50');
     }
 
-    // 2. Budget utilization
+    // 2. Budget
     const budgetPercentEl = document.getElementById('budget-percent');
     const budgetLimitEl = document.getElementById('budget-limit');
     const budgetProgress = document.getElementById('budget-progress-bar');
     const budgetIcon = document.getElementById('budget-icon-container');
+    const budgetRemaining = document.getElementById('budget-remaining');
 
     if (budgetPercentEl && budgetLimitEl && budgetProgress) {
       const util = data.budgetUtilization;
@@ -182,6 +187,12 @@
         budgetProgress.classList.add('bg-indigo-500');
         if (budgetIcon) budgetIcon.className = 'p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 rounded-xl';
       }
+
+      if (budgetRemaining) {
+        const remaining = data.budgetLimit - data.currentMonthSpend;
+        budgetRemaining.textContent = remaining > 0 ? `${fmt(remaining)} remaining` : `${fmt(Math.abs(remaining))} over budget`;
+        budgetRemaining.className = remaining > 0 ? 'text-[9px] text-emerald-500 dark:text-emerald-400' : 'text-[9px] text-rose-500 dark:text-rose-400';
+      }
     }
 
     // 3. EOM Forecast
@@ -191,12 +202,15 @@
       eomForecastEl.textContent = fmt(forecast.predictedCost);
       const confLabel = document.getElementById('forecast-confidence');
       if (confLabel) confLabel.textContent = `${forecast.confidence}%`;
+      const rangeEl = document.getElementById('forecast-range');
+      if (rangeEl) rangeEl.textContent = `Range: ${fmt(forecast.lowerBound)} – ${fmt(forecast.upperBound)}`;
     }
 
     // 4. FinOps Score
     const finopsEl = document.getElementById('finops-score-num');
     const finopsGrade = document.getElementById('finops-grade');
     const scoreIcon = document.getElementById('score-icon-container');
+    const finopsBreakdown = document.getElementById('finops-breakdown');
     if (finopsEl && finopsGrade) {
       const score = data.finopsScore;
       finopsEl.textContent = String(score);
@@ -218,29 +232,54 @@
         finopsGrade.className = 'text-[10px] font-bold text-rose-500 uppercase tracking-wider';
         if (scoreIcon) scoreIcon.className = 'p-2 bg-rose-50 dark:bg-rose-950/40 rounded-xl';
       }
+
+      if (finopsBreakdown) {
+        const issues = [];
+        if (data.waste.wasteRatio > 10) issues.push(`${data.waste.wasteRatio.toFixed(0)}% waste`);
+        if (data.budgetUtilization > 90) issues.push(`${Math.round(data.budgetUtilization)}% budget used`);
+        if (data.trend.volatility > 30) issues.push(`${data.trend.volatility.toFixed(0)}% volatile`);
+        finopsBreakdown.textContent = issues.length > 0 ? issues.join(' · ') : 'All metrics within thresholds';
+      }
     }
 
-    // 5. Savings
-    const savingsEstEl = document.getElementById('savings-est');
-    if (savingsEstEl) {
-      const totalSavings = data.recommendations.reduce((sum, r) => sum + r.potentialSavings, 0);
-      savingsEstEl.textContent = fmtCompact(totalSavings);
+    // 5. Waste & Savings
+    const wasteTotal = document.getElementById('waste-total');
+    const wasteRatio = document.getElementById('waste-ratio');
+    const wasteBreakdown = document.getElementById('waste-breakdown');
+    const savingsEst = document.getElementById('savings-est');
+    if (wasteTotal && data.waste) {
+      wasteTotal.textContent = fmt(data.waste.totalWaste);
+      if (wasteRatio) wasteRatio.textContent = `(${data.waste.wasteRatio.toFixed(1)}% of total)`;
+
+      if (wasteBreakdown) {
+        const items = [];
+        if (data.waste.zombieCost > 0) items.push(`<div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">Zombies</span><span class="text-rose-500 dark:text-rose-400 font-semibold">${fmt(data.waste.zombieCost)}</span></div>`);
+        if (data.waste.idleCost > 0) items.push(`<div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">Idle</span><span class="text-amber-500 dark:text-amber-400 font-semibold">${fmt(data.waste.idleCost)}</span></div>`);
+        if (data.waste.underutilizedCost > 0) items.push(`<div class="flex justify-between"><span class="text-slate-500 dark:text-slate-400">Under-utilized</span><span class="text-indigo-500 dark:text-indigo-400 font-semibold">${fmt(data.waste.underutilizedCost)}</span></div>`);
+        wasteBreakdown.innerHTML = items.join('');
+      }
+
+      if (savingsEst) {
+        const totalSavings = data.recommendations.reduce((sum, r) => sum + r.potentialSavings, 0);
+        savingsEst.textContent = fmt(totalSavings);
+      }
     }
-    const recCountEl = document.getElementById('rec-count');
-    if (recCountEl) recCountEl.textContent = String(data.recommendations.length);
   });
 
   window.addEventListener('reset-dashboard', () => {
-    const ids = ['mtd-cost', 'eom-forecast', 'budget-percent', 'budget-limit', 'finops-score-num', 'savings-est', 'daily-avg', 'forecast-confidence'];
+    const ids = ['mtd-cost', 'eom-forecast', 'budget-percent', 'budget-limit', 'finops-score-num', 'savings-est', 'daily-avg', 'forecast-confidence', 'waste-total'];
     ids.forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        if (id === 'mtd-cost' || id === 'eom-forecast' || id === 'budget-limit') el.textContent = '$0';
-        else if (id === 'daily-avg') el.textContent = '$0';
+        if (id.includes('cost') || id === 'budget-limit' || id === 'eom-forecast' || id === 'waste-total') el.textContent = '$0';
         else el.textContent = '0';
       }
     });
     const bar = document.getElementById('budget-progress-bar');
     if (bar) bar.style.width = '0%';
+    ['spend-trend-indicator', 'waste-breakdown', 'forecast-range', 'budget-remaining', 'finops-breakdown'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    });
   });
 </script>

@@ -6,26 +6,38 @@ export class RecommendationEngine {
     const provider = records[0]?.provider || 'aws';
     let idCounter = 1;
 
+    // Helper to compute priority: higher = more urgent
+    const calcPriority = (impact: string, effort: string, savings: number): number => {
+      let p = 5;
+      if (impact === 'high') p += 3; else if (impact === 'medium') p += 1;
+      if (effort === 'easy') p += 2; else if (effort === 'hard') p -= 1;
+      if (savings > 300) p += 1; else if (savings < 50) p -= 1;
+      return Math.max(1, Math.min(10, p));
+    };
+
     // 1. Compute Recommendations (Mapped from underutilized VM instances)
     const allUnderutilized = [...healthStatus.underutilized];
     allUnderutilized.forEach(res => {
-      const savings = Math.round(res.cost * 0.5); // resize saves 50%
+      const savings = Math.round(res.cost * 0.5);
       recommendations.push({
         id: `rec-comp-${idCounter++}`,
         category: 'Compute',
-        title: `Resize Oversized Virtual Machine: ${res.id}`,
-        description: `Resource '${res.id}' (${res.name}) has an average CPU utilization of less than 5%. Resizing to a smaller instance type will maintain performance while saving costs.`,
+        title: `Right-size ${res.name}: Reduce Over-Provisioning`,
+        description: `Resource '${res.id}' (${res.name}) has average CPU utilization under 5%. Downsizing to a smaller instance type will maintain performance while cutting costs by ~50%.`,
         resourceId: res.id,
         provider: res.provider,
         impact: 'high',
         potentialSavings: savings,
         effort: 'moderate',
         actionableSteps: [
-          `Analyze peak CPU and memory demand for resource ${res.id} over the last 30 days.`,
+          `Review peak CPU/memory utilization for ${res.id} over the past 30 days.`,
+          `Identify the smallest instance type that meets peak demand + 20% buffer.`,
           `Schedule a maintenance window to stop the instance.`,
-          `Modify instance type to a lower spec (e.g. from xlarge to medium/small).`,
-          `Start the instance and verify application health.`
-        ]
+          `Change instance type and restart. Monitor for 48 hours before decommissioning old config.`
+        ],
+        roiMonths: 1,
+        annualSavings: savings * 12,
+        priority: calcPriority('high', 'moderate', savings)
       });
     });
 
@@ -34,18 +46,22 @@ export class RecommendationEngine {
       recommendations.push({
         id: `rec-comp-${idCounter++}`,
         category: 'Compute',
-        title: 'Establish Reserved Instances (RI) / Savings Plans',
-        description: 'Analysis of compute usage indicates a stable baseline. Purchasing commitments (1-year or 3-year) can save up to 72% compared to On-Demand pricing.',
+        title: 'Establish Reserved Instances / Savings Plans',
+        description: 'Compute usage shows a stable baseline. Purchasing 1-year or 3-year commitments can save up to 72% vs On-Demand pricing for steady-state workloads.',
         resourceId: 'Global-Compute',
         provider,
         impact: 'high',
         potentialSavings: 350.0,
         effort: 'easy',
         actionableSteps: [
-          'Review the Cost Explorer reservation purchase recommendations.',
-          'Choose a 1-Year No Upfront Savings Plan for flexible compute workloads.',
-          'Approve purchase in billing dashboard.'
-        ]
+          'Review Cost Explorer reservation purchase recommendations.',
+          'Analyze 30-day compute usage to identify steady-state instances eligible for commitments.',
+          'Select a 1-Year No Upfront Savings Plan for flexible compute workloads.',
+          'Approve purchase in billing dashboard and set up utilization tracking.'
+        ],
+        roiMonths: 1,
+        annualSavings: 4200.0,
+        priority: calcPriority('high', 'easy', 350)
       });
     }
 
@@ -56,19 +72,22 @@ export class RecommendationEngine {
       recommendations.push({
         id: `rec-stor-${idCounter++}`,
         category: 'Storage',
-        title: `Delete Unattached Disk Volume: ${disk.id}`,
-        description: `Storage volume '${disk.id}' (${disk.name}) is not attached to any running instance. It is incurring charge while doing nothing.`,
+        title: `Delete Unattached Disk Volume: ${disk.name}`,
+        description: `Storage volume '${disk.id}' (${disk.name}) is detached from all instances but still incurring charges. Deleting it eliminates waste immediately.`,
         resourceId: disk.id,
         provider: disk.provider,
         impact: 'medium',
         potentialSavings: disk.cost,
         effort: 'easy',
         actionableSteps: [
-          `Take a final backup snapshot of volume ${disk.id} if historical data retention is needed.`,
-          `Select volume ${disk.id} in the console.`,
-          `Execute delete/terminate action.`,
-          `Audit automation scripts to ensure volumes are deleted automatically upon instance termination.`
-        ]
+          `Verify no application depends on volume ${disk.id}.`,
+          `Create a final backup snapshot if data retention is required.`,
+          `Delete the unattached volume from the storage console.`,
+          `Add automation rules to flag volumes unattached for > 7 days.`
+        ],
+        roiMonths: 0,
+        annualSavings: disk.cost * 12,
+        priority: calcPriority('medium', 'easy', disk.cost)
       });
     });
 
@@ -79,7 +98,7 @@ export class RecommendationEngine {
         id: `rec-stor-${idCounter++}`,
         category: 'Storage',
         title: 'Clean Up Stale EBS Snapshots',
-        description: 'Detected snapshots older than 90 days. Deleting stale and redundant backups will reduce S3/EBS snapshot storage costs.',
+        description: 'Snapshots older than 90 days detected. Deleting stale backups reduces S3/EBS snapshot storage costs without impacting recovery capability.',
         resourceId: 'ebs-snapshots-stale',
         provider: 'aws',
         impact: 'medium',
@@ -87,10 +106,13 @@ export class RecommendationEngine {
         effort: 'easy',
         actionableSteps: [
           'List all EBS snapshots and sort by creation date.',
-          'Identify snapshots associated with ami/volumes that no longer exist.',
-          'Delete snapshots that exceed the standard 30-day retention policy.',
-          'Implement AWS Backup lifecycle policies to automate snapshot expiration.'
-        ]
+          'Identify snapshots not linked to any existing AMI or volume.',
+          'Delete snapshots exceeding 30-day retention policy.',
+          'Implement AWS Backup lifecycle policies to automate future snapshot expiration.'
+        ],
+        roiMonths: 0,
+        annualSavings: 2160.0,
+        priority: calcPriority('medium', 'easy', 180)
       });
     }
 
@@ -100,18 +122,22 @@ export class RecommendationEngine {
       recommendations.push({
         id: `rec-net-${idCounter++}`,
         category: 'Networking',
-        title: `Release Unused Public IP Address: ${ip.id}`,
-        description: `Elastic/Public IP address '${ip.id}' is allocated to your account but is not associated with any active server, incurring hourly idle charges.`,
+        title: `Release Unused Public IP: ${ip.name}`,
+        description: `IP address '${ip.id}' (${ip.name}) is allocated but unassociated, incurring hourly idle charges. Releasing it returns it to the public pool at no cost.`,
         resourceId: ip.id,
         provider: ip.provider,
         impact: 'low',
         potentialSavings: ip.cost,
         effort: 'easy',
         actionableSteps: [
-          `Verify that the IP ${ip.id} is truly idle and not needed for a static DNS config.`,
-          `Select the IP address in your cloud console network panel.`,
-          `Choose 'Release IP address' / 'Disassociate' to return it to the public pool.`
-        ]
+          `Verify IP ${ip.id} is not used for DNS or static service endpoints.`,
+          `Select the IP address in the networking console.`,
+          `Disassociate and release the Elastic/Static IP address.`,
+          `Update DNS records if they pointed to this IP.`
+        ],
+        roiMonths: 0,
+        annualSavings: ip.cost * 12,
+        priority: calcPriority('low', 'easy', ip.cost)
       });
     });
 
@@ -122,18 +148,21 @@ export class RecommendationEngine {
         id: `rec-net-${idCounter++}`,
         category: 'Networking',
         title: 'Optimize NAT Gateway Spend with VPC Endpoints',
-        description: 'Detected high traffic volumes passing through NAT Gateways. Establishing VPC Gateway Endpoints for S3 and DynamoDB routes traffic through internal networks, eliminating data processing charges.',
+        description: 'High traffic volumes through NAT Gateways detected. Establishing VPC Gateway Endpoints for S3 and DynamoDB routes traffic internally, eliminating data processing charges.',
         resourceId: 'nat-gateways-route',
         provider,
         impact: 'high',
         potentialSavings: 450.0,
         effort: 'moderate',
         actionableSteps: [
-          `Review network flows to identify S3/DynamoDB bucket destinations from private subnets.`,
-          `Create a VPC Gateway Endpoint for Amazon S3 in the VPC route tables.`,
-          `Verify that traffic to S3 now bypasses the NAT Gateway.`,
-          `Decommission unnecessary NAT Gateways in subnets that do not require external internet access.`
-        ]
+          'Identify S3/DynamoDB traffic flows from private subnets via VPC Flow Logs.',
+          'Create VPC Gateway Endpoints for S3 and DynamoDB.',
+          'Update route tables to prioritize gateway endpoints over NAT.',
+          'Monitor NAT Gateway data processing charges for 7 days post-change.'
+        ],
+        roiMonths: 1,
+        annualSavings: 5400.0,
+        priority: calcPriority('high', 'moderate', 450)
       });
     }
 
@@ -143,19 +172,22 @@ export class RecommendationEngine {
       recommendations.push({
         id: `rec-db-${idCounter++}`,
         category: 'Database',
-        title: `Terminate Idle Database Instance / Replica: ${db.id}`,
-        description: `Database instance '${db.id}' (${db.name}) has zero active connections and CPU usage remains under 1%. Consider taking a snapshot and deleting the idle resource.`,
+        title: `Terminate Idle Database: ${db.name}`,
+        description: `Database '${db.id}' (${db.name}) has zero connections and < 1% CPU. Taking a snapshot and deleting it eliminates a significant monthly cost.`,
         resourceId: db.id,
         provider: db.provider,
         impact: 'high',
         potentialSavings: db.cost,
         effort: 'moderate',
         actionableSteps: [
-          `Confirm with application team that ${db.id} database is not used for periodic batch jobs.`,
-          `Take a final database backup snapshot.`,
-          `Delete the database replica instance.`,
-          `If this is a development instance, implement scripts to stop development databases automatically outside office hours.`
-        ]
+          `Verify no batch jobs or scheduled tasks depend on ${db.id}.`,
+          `Create a final snapshot for point-in-time recovery.`,
+          `Delete the idle database instance.`,
+          `Implement auto-stop schedules for dev/test databases outside business hours.`
+        ],
+        roiMonths: 0,
+        annualSavings: db.cost * 12,
+        priority: calcPriority('high', 'moderate', db.cost)
       });
     });
 
@@ -163,19 +195,22 @@ export class RecommendationEngine {
     recommendations.push({
       id: `rec-k8s-${idCounter++}`,
       category: 'Kubernetes',
-      title: 'Enable Cluster Autoscaler & Optimize Container Resource Limits',
-      description: 'Review of cluster deployment shows pod requests significantly higher than actual CPU/Memory consumption. Right-sizing container limits will allow nodes to pack more tightly and reduce VM nodes count.',
+      title: 'Optimize Container Resource Limits & Enable Autoscaler',
+      description: 'Pod resource requests are significantly higher than actual usage. Right-sizing limits allows tighter node packing, reducing the number of VM nodes required.',
       resourceId: 'kubernetes-clusters',
       provider,
       impact: 'medium',
       potentialSavings: 280.0,
       effort: 'moderate',
       actionableSteps: [
-        'Deploy the Kubernetes Metrics Server to track pod utilization.',
-        'Review namespace usage and set resource quotas.',
-        'Adjust limits and requests in deployment manifests based on historical CPU/RAM peaks.',
-        'Enable Cluster Autoscaler on the node pools to automatically spin down empty VMs.'
-      ]
+        'Deploy Metrics Server and collect 14 days of pod utilization data.',
+        'Compare actual vs. requested CPU/Memory across all namespaces.',
+        'Set resource requests to P95 utilization + 20% buffer.',
+        'Enable Cluster Autoscaler on node pools to scale down underutilized nodes.'
+      ],
+      roiMonths: 2,
+      annualSavings: 3360.0,
+      priority: calcPriority('medium', 'moderate', 280)
     });
 
     // 6. Serverless Recommendations
@@ -183,37 +218,48 @@ export class RecommendationEngine {
     recommendations.push({
       id: `rec-serv-${idCounter++}`,
       category: 'Serverless',
-      title: 'Optimize Serverless Memory Allocations',
-      description: 'Some functions are allocated with default 1024MB RAM but only utilize 128MB. Fine-tuning memory parameters will decrease GB-Second execution charges.',
+      title: 'Tune Serverless Memory Allocations',
+      description: 'Functions running with default 1024MB RAM but only utilizing ~128MB. Reducing memory allocation decreases both GB-Second charges and execution duration.',
       resourceId: 'serverless-functions',
       provider,
       impact: 'low',
       potentialSavings: 45.0,
       effort: 'easy',
       actionableSteps: [
-        'Use AWS Lambda Power Tuning (or cloud equivalent) to run performance tests across memory configurations.',
-        'Modify function configurations to the mathematically optimal memory tier.',
-        'Reduces execution time and costs simultaneously.'
-      ]
+        'Run AWS Lambda Power Tuning tool across memory configurations (128MB-1024MB).',
+        'Identify the optimal memory tier that minimizes cost without increasing duration.',
+        'Update function configurations in deployment manifests.',
+        'Monitor cost and performance for 7 days after changes.'
+      ],
+      roiMonths: 0,
+      annualSavings: 540.0,
+      priority: calcPriority('low', 'easy', 45)
     });
 
     // 7. Security Cost Recommendations
     recommendations.push({
       id: `rec-sec-${idCounter++}`,
       category: 'Security',
-      title: 'Configure Log Retention & Clean Up Inactive Secrets',
-      description: 'Logging vaults are configured with "Never Expire" policy. Deleting inactive IAM roles, unused KMS keys, and setting log group retention to 30 days reduces backup storage overhead.',
+      title: 'Clean Up Inactive Secrets & Set Log Retention',
+      description: 'Logging vaults set to "Never Expire" and unused KMS keys accumulate storage costs. Applying retention policies and cleaning inactive resources reduces overhead.',
       resourceId: 'security-logging-groups',
       provider,
       impact: 'low',
       potentialSavings: 85.0,
       effort: 'easy',
       actionableSteps: [
-        'Query AWS Secrets Manager for secrets not accessed in the last 90 days and mark for deletion.',
-        'Scan CloudWatch Log Groups and change retention from "Never Expire" to "30 Days" for staging/development.',
-        'Disable KMS keys that are no longer assigned to any encrypted volumes.'
-      ]
+        'Audit Secrets Manager for secrets not accessed in 90+ days and schedule deletion.',
+        'Set CloudWatch Log Group retention to 30 days for staging/development environments.',
+        'Identify and disable KMS keys not associated with any active encrypted resource.',
+        'Document the retention policy for ongoing compliance.'
+      ],
+      roiMonths: 0,
+      annualSavings: 1020.0,
+      priority: calcPriority('low', 'easy', 85)
     });
+
+    // Sort by priority (highest first)
+    recommendations.sort((a, b) => b.priority - a.priority);
 
     return recommendations;
   }

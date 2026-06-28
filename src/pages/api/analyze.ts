@@ -4,6 +4,7 @@ import { CostAnalyzer } from '../../lib/analyzer';
 import { AnomalyDetector } from '../../lib/anomalies';
 import { RecommendationEngine } from '../../lib/recommender';
 import { ForecastingEngine } from '../../lib/forecaster';
+import { generateInsights } from '../../lib/insights';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -16,62 +17,81 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (!csvFile) {
       return new Response(JSON.stringify({ error: 'No file uploaded. Please select a valid CSV billing report.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        status: 400, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (csvFile.size > 50 * 1024 * 1024) {
+      return new Response(JSON.stringify({ error: 'File too large. Maximum size is 50MB.' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' }
       });
     }
 
     const csvText = await csvFile.text();
+    if (!csvText || csvText.trim().length === 0) {
+      return new Response(JSON.stringify({ error: 'File is empty. Please upload a valid CSV billing report.' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
-    // 1. Parse CSV & Normalize
+    // 1. Parse CSV
     const records = CostReportParser.parse(csvText, cloudProvider as 'aws' | 'azure' | 'gcp');
+    if (records.length === 0) {
+      return new Response(JSON.stringify({ error: 'No valid billing records found. Check CSV format and column headers.' }), {
+        status: 400, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    console.log(`[analyze] parsed ${records.length} records`);
 
-    // 2. Perform core cost aggregations & breakdowns
-    const analysis = CostAnalyzer.analyze(records);
-
-    // 3. Detect spending anomalies & spikes
-    const anomalies = AnomalyDetector.detect(records);
-
-    // 4. Scrutinize resource health (idle/zombies)
+    // 2. Detect resource health first (needed for analyzer waste analysis)
     const resourceHealth = AnomalyDetector.analyzeResourceHealth(records);
 
-    // 5. Generate cost optimization recommendations
+    // 3. Core analysis with waste detection
+    const analysis = CostAnalyzer.analyze(records, resourceHealth);
+
+    // 4. Anomalies
+    const anomalies = AnomalyDetector.detect(records);
+
+    // 5. Recommendations (sorted by priority)
     const recommendations = RecommendationEngine.generate(records, resourceHealth);
 
-    // 6. Complete the optimization score based on savings potential
+    // 6. Optimization score
     const totalPotentialSavings = recommendations.reduce((sum, r) => sum + r.potentialSavings, 0);
     const monthlySpend = analysis.currentMonthSpend;
-    const optimizationScore = monthlySpend > 0 
+    const optimizationScore = monthlySpend > 0
       ? Math.max(10, Math.min(100, Math.round(100 - (totalPotentialSavings / (monthlySpend + totalPotentialSavings)) * 100)))
       : 100;
 
-    // 7. Perform EOM, EOQ, and Yearly predictions
+    // 7. Forecasts
     const forecasts = ForecastingEngine.generate(records, analysis.dailySpend, monthlySpend);
 
-    // Assemble full report payload
+    // 8. Generate executive insights
+    const fullResults = { ...analysis, optimizationScore, anomalies, recommendations, resourceHealth, forecasts, insights: [] as any[] };
+    const insights = generateInsights(fullResults as any);
+
+    // Assemble final payload
     const results = {
       ...analysis,
       optimizationScore,
       anomalies,
       recommendations,
       resourceHealth,
-      forecasts
+      forecasts,
+      insights
     };
+
+    console.log(`[analyze] complete: ${anomalies.length} anomalies, ${recommendations.length} recommendations, ${insights.length} insights, score: ${analysis.finopsScore}`);
 
     return new Response(JSON.stringify(results), {
       status: 200,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      }
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }
     });
   } catch (error: any) {
-    console.error('API Error processing report:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to parse and process the billing report. Verify it has the correct CSV headers.' 
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+    console.error('[analyze] API Error:', error);
+    const message = error.message || 'Failed to parse and process the billing report.';
+    const status = message.includes('empty') || message.includes('Could not identify') ? 400 : 500;
+    return new Response(JSON.stringify({ error: message }), {
+      status, headers: { 'Content-Type': 'application/json' }
     });
   }
 };

@@ -15,26 +15,30 @@ export class ForecastingEngine {
     }
 
     const dailyCosts = sortedDates.map(date => dailySpend[date]);
-    
-    // Fit linear regression y = m * x + c
-    // x = 0, 1, 2, ..., n-1
-    // y = dailyCosts
-    let sumX = 0;
-    let sumY = 0;
-    let sumXY = 0;
-    let sumXX = 0;
 
+    // Decompose trend: separate trend component from noise
+    // Use simple moving average (window=3) for smoothing
+    const smoothedCosts: number[] = [];
+    const windowSize = Math.min(3, n);
+    for (let i = 0; i < n; i++) {
+      const start = Math.max(0, i - Math.floor(windowSize / 2));
+      const end = Math.min(n, i + Math.floor(windowSize / 2) + 1);
+      const slice = dailyCosts.slice(start, end);
+      smoothedCosts.push(slice.reduce((s, v) => s + v, 0) / slice.length);
+    }
+
+    // Fit linear regression on smoothed data for trend
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
     for (let i = 0; i < n; i++) {
       sumX += i;
-      sumY += dailyCosts[i];
-      sumXY += i * dailyCosts[i];
+      sumY += smoothedCosts[i];
+      sumXY += i * smoothedCosts[i];
       sumXX += i * i;
     }
 
     const meanX = sumX / n;
     const meanY = sumY / n;
 
-    // Calculate slope m and intercept c
     let m = 0;
     let c = meanY;
 
@@ -45,41 +49,44 @@ export class ForecastingEngine {
       c = meanY - m * meanX;
     }
 
-    // Ensure slope or projections don't run into negative daily costs
+    // Project daily spend with trend extrapolation
     const projectDailySpend = (dayIndex: number): number => {
-      const pred = m * dayIndex + c;
-      return Math.max(pred, 1.0); // minimum $1 daily cost
+      const trendPred = m * dayIndex + c;
+      // Blend with recent average for stability (80% trend, 20% recent avg)
+      const recentAvg = dailyCosts.slice(Math.max(0, n - 5)).reduce((s, v) => s + v, 0) / Math.min(5, n);
+      const blended = trendPred * 0.8 + recentAvg * 0.2;
+      return Math.max(blended, 0.5);
     };
 
-    // Calculate standard deviation of residuals for confidence bounds
+    // Calculate residuals on raw (not smoothed) data for confidence
     let sumResidualSq = 0;
     for (let i = 0; i < n; i++) {
       const pred = m * i + c;
       sumResidualSq += Math.pow(dailyCosts[i] - pred, 2);
     }
-    const stdDev = n > 1 ? Math.sqrt(sumResidualSq / (n - 1)) : 10;
+    const residualsStdDev = n > 1 ? Math.sqrt(sumResidualSq / (n - 1)) : meanY * 0.2;
 
     // Find date properties
     const latestDateStr = sortedDates[n - 1];
     const latestDate = new Date(latestDateStr);
-    
-    // 1. End of Month (EOM) Forecast
     const currentDay = latestDate.getDate();
     const daysInMonth = new Date(latestDate.getFullYear(), latestDate.getMonth() + 1, 0).getDate();
     const remainingDaysInMonth = daysInMonth - currentDay;
 
+    // 1. End of Month (EOM) Forecast
     let eomProjectedRemaining = 0;
     for (let i = 1; i <= remainingDaysInMonth; i++) {
       eomProjectedRemaining += projectDailySpend(n - 1 + i);
     }
     const eomPredicted = currentMonthSpend + eomProjectedRemaining;
-    const eomWidth = Math.max(stdDev * Math.sqrt(remainingDaysInMonth) * 1.64, eomPredicted * 0.05); // 90% confidence
+    // Wider confidence for EOM if high volatility
+    const cv = meanY > 0 ? residualsStdDev / meanY : 0.2;
+    const eomWidthFactor = 1.28 + cv * 2; // scales with volatility
+    const eomWidth = Math.max(residualsStdDev * Math.sqrt(remainingDaysInMonth) * eomWidthFactor, eomPredicted * 0.04);
 
     // 2. End of Quarter (EOQ) Forecast
-    // Find remaining days in current quarter
-    // Quarters: Q1 (Jan-Mar), Q2 (Apr-Jun), Q3 (Jul-Sep), Q4 (Oct-Dec)
-    const currentMonthIndex = latestDate.getMonth(); // 0-11
-    const quarterEndMonthIndex = Math.floor(currentMonthIndex / 3) * 3 + 2; // 2, 5, 8, 11
+    const currentMonthIndex = latestDate.getMonth();
+    const quarterEndMonthIndex = Math.floor(currentMonthIndex / 3) * 3 + 2;
     const quarterEndDate = new Date(latestDate.getFullYear(), quarterEndMonthIndex + 1, 0);
     const diffTime = quarterEndDate.getTime() - latestDate.getTime();
     const remainingDaysInQuarter = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
@@ -88,55 +95,55 @@ export class ForecastingEngine {
     for (let i = 1; i <= remainingDaysInQuarter; i++) {
       eoqProjectedRemaining += projectDailySpend(n - 1 + i);
     }
-    // We assume current quarter cost is current month spend + previous months in quarter (which we approximate or sum from records)
-    // For simplicity, we project from the current cumulative spend
-    const currentQuarterSpendSoFar = currentMonthSpend; // Fallback to currentMonthSpend if we don't have full Q history
-    const eoqPredicted = currentQuarterSpendSoFar + eoqProjectedRemaining;
-    const eoqWidth = Math.max(stdDev * Math.sqrt(remainingDaysInQuarter) * 1.96, eoqPredicted * 0.1); // 95% confidence
+    const eoqPredicted = currentMonthSpend + eoqProjectedRemaining;
+    const eoqWidthFactor = 1.96 + cv * 3;
+    const eoqWidth = Math.max(residualsStdDev * Math.sqrt(remainingDaysInQuarter) * eoqWidthFactor, eoqPredicted * 0.08);
 
     // 3. Yearly Forecast
-    const daysInYear = 365;
-    // Estimate remaining days in the year
     const startOfYear = new Date(latestDate.getFullYear(), 0, 1);
-    const endOfYear = new Date(latestDate.getFullYear(), 11, 31);
     const dayOfYear = Math.floor((latestDate.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    const remainingDaysInYear = daysInYear - dayOfYear;
+    const remainingDaysInYear = 365 - dayOfYear;
 
     let yearlyProjectedRemaining = 0;
     for (let i = 1; i <= remainingDaysInYear; i++) {
       yearlyProjectedRemaining += projectDailySpend(n - 1 + i);
     }
-    const currentYearSpendSoFar = currentMonthSpend * (dayOfYear / 30); // scale current month as baseline proxy
+    // Estimate current year spend: scale current month as baseline
+    const currentYearSpendSoFar = currentMonthSpend * (dayOfYear / 30);
     const yearlyPredicted = currentYearSpendSoFar + yearlyProjectedRemaining;
-    const yearlyWidth = Math.max(stdDev * Math.sqrt(remainingDaysInYear) * 1.96, yearlyPredicted * 0.15);
+    const yearlyWidthFactor = 2.58 + cv * 5;
+    const yearlyWidth = Math.max(residualsStdDev * Math.sqrt(remainingDaysInYear) * yearlyWidthFactor, yearlyPredicted * 0.12);
 
-    // Calculate a confidence score between 0 and 100 based on standard deviation relative to mean spend
-    const meanSpend = meanY;
-    let confidence = 95;
-    if (meanSpend > 0) {
-      const cv = stdDev / meanSpend; // Coefficient of variation
-      confidence = Math.max(60, Math.min(95, Math.round(95 - cv * 30)));
+    // Confidence: based on coefficient of variation
+    let confidence = 92;
+    if (meanY > 0) {
+      confidence = Math.max(55, Math.min(95, Math.round(92 - cv * 40)));
     }
+
+    // Reduce confidence for longer horizons
+    const eomConfidence = confidence;
+    const eoqConfidence = Math.max(50, confidence - 8);
+    const yearlyConfidence = Math.max(35, confidence - 18);
 
     return [
       {
         period: 'EOM',
         predictedCost: Math.round(eomPredicted * 100) / 100,
-        confidence,
+        confidence: eomConfidence,
         lowerBound: Math.max(10, Math.round((eomPredicted - eomWidth) * 100) / 100),
         upperBound: Math.round((eomPredicted + eomWidth) * 100) / 100
       },
       {
         period: 'EOQ',
         predictedCost: Math.round(eoqPredicted * 100) / 100,
-        confidence: Math.max(50, confidence - 5), // lower confidence further out
+        confidence: eoqConfidence,
         lowerBound: Math.max(10, Math.round((eoqPredicted - eoqWidth) * 100) / 100),
         upperBound: Math.round((eoqPredicted + eoqWidth) * 100) / 100
       },
       {
         period: 'Yearly',
         predictedCost: Math.round(yearlyPredicted * 100) / 100,
-        confidence: Math.max(40, confidence - 15), // even lower confidence for year
+        confidence: yearlyConfidence,
         lowerBound: Math.max(10, Math.round((yearlyPredicted - yearlyWidth) * 100) / 100),
         upperBound: Math.round((yearlyPredicted + yearlyWidth) * 100) / 100
       }

@@ -2,7 +2,7 @@
 import EChart from './Charts/EChart.astro';
 ---
 
-<div id="dashboard-view" class="hidden space-y-6 animate-fade-in pb-16">
+<div id="dashboard-view" class="space-y-6 animate-fade-in pb-16">
   <!-- Header Bar -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5 shadow-sm no-print">
     <div>
@@ -32,15 +32,64 @@ import EChart from './Charts/EChart.astro';
 
   <!-- Tab Navigation Bar -->
   <div class="flex gap-1 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-1.5 no-print overflow-x-auto" id="dashboard-tabs">
-    <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap bg-indigo-500 text-white shadow-sm" data-tab="overview">Overview</button>
+    <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap bg-indigo-500 text-white shadow-sm" data-tab="insights">Insights</button>
+    <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" data-tab="overview">Overview</button>
     <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" data-tab="breakdown">Breakdown</button>
-    <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" data-tab="anomalies">Anomalies &amp; Hidden</button>
+    <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" data-tab="efficiency">Efficiency</button>
+    <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" data-tab="allocation">Allocation</button>
+    <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" data-tab="anomalies">Anomalies</button>
     <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" data-tab="recommendations">Recommendations</button>
     <button class="px-4 py-2 text-[10px] font-bold font-display rounded-xl transition-all whitespace-nowrap text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" data-tab="forecast">Forecast</button>
   </div>
 
+  <!-- TAB: Insights (Executive Summary) -->
+  <div class="tab-content space-y-6" id="tab-insights" data-tab-content="insights">
+    <!-- Period Comparison -->
+    <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5" id="period-comparison-panel">
+      <h3 class="text-sm font-bold font-display text-slate-800 dark:text-slate-100 mb-3">Period Comparison</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="period-comparison-grid"></div>
+    </div>
+    <!-- Insights Cards -->
+    <div class="space-y-3" id="insights-container">
+      <div class="text-center py-12 text-slate-400 dark:text-slate-600 text-[10px]">Analyzing report...</div>
+    </div>
+  </div>
+
   <!-- TAB: Overview -->
   <div class="tab-content space-y-6" id="tab-overview" data-tab-content="overview">
+    <!-- Trend Analysis Panel -->
+    <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5" id="trend-panel">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h3 class="text-sm font-bold font-display text-slate-800 dark:text-slate-100">Spending Trend</h3>
+          <p class="text-[10px] text-slate-400 dark:text-slate-500">Cost trajectory and burn rate analysis</p>
+        </div>
+        <span class="px-2.5 py-1 text-[9px] font-bold rounded-lg uppercase tracking-wider" id="trend-direction-badge">--</span>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="space-y-1">
+          <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Daily Change</span>
+          <span class="text-sm font-bold text-slate-800 dark:text-slate-100" id="trend-daily-change">--</span>
+        </div>
+        <div class="space-y-1">
+          <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Weekly Change</span>
+          <span class="text-sm font-bold text-slate-800 dark:text-slate-100" id="trend-weekly-change">--</span>
+        </div>
+        <div class="space-y-1">
+          <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Burn Rate (30d)</span>
+          <span class="text-sm font-bold text-slate-800 dark:text-slate-100" id="trend-burn-rate">--</span>
+        </div>
+        <div class="space-y-1">
+          <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Volatility</span>
+          <span class="text-sm font-bold text-slate-800 dark:text-slate-100" id="trend-volatility">--</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4 mt-3 pt-3 border-t border-slate-200/50 dark:border-slate-800/40 text-[9px] text-slate-400 dark:text-slate-500">
+        <span>Peak: <b class="text-slate-600 dark:text-slate-300" id="trend-peak">--</b></span>
+        <span>Low: <b class="text-slate-600 dark:text-slate-300" id="trend-low">--</b></span>
+      </div>
+    </div>
+
     <!-- Trend Chart + Service Donut -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5">
@@ -123,6 +172,67 @@ import EChart from './Charts/EChart.astro';
           <tbody id="cost-breakdown-table"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- TAB: Efficiency -->
+  <div class="tab-content hidden space-y-6" id="tab-efficiency" data-tab-content="efficiency">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5 space-y-2">
+        <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Cost / Day</span>
+        <span class="text-xl font-extrabold font-display text-slate-800 dark:text-slate-100" id="eff-cost-per-day">--</span>
+      </div>
+      <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5 space-y-2">
+        <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Cost / Service</span>
+        <span class="text-xl font-extrabold font-display text-slate-800 dark:text-slate-100" id="eff-cost-per-service">--</span>
+      </div>
+      <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5 space-y-2">
+        <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Top 3 Concentration</span>
+        <span class="text-xl font-extrabold font-display text-slate-800 dark:text-slate-100" id="eff-concentration">--</span>
+      </div>
+      <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5 space-y-2">
+        <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">Gini Coefficient</span>
+        <span class="text-xl font-extrabold font-display text-slate-800 dark:text-slate-100" id="eff-gini">--</span>
+        <span class="text-[9px] text-slate-400 dark:text-slate-500" id="eff-gini-label">Spend distribution</span>
+      </div>
+    </div>
+    <!-- Pareto Chart -->
+    <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5">
+      <h3 class="text-sm font-bold font-display text-slate-800 dark:text-slate-100 mb-1">Cost Concentration (Pareto)</h3>
+      <p class="text-[10px] text-slate-400 dark:text-slate-500 mb-3" id="eff-pareto-label">--</p>
+      <EChart id="pareto-chart" style="height: 250px;" />
+    </div>
+    <!-- Service Trends -->
+    <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5">
+      <h3 class="text-sm font-bold font-display text-slate-800 dark:text-slate-100 mb-3">Service Cost Trends</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-slate-200/50 dark:border-slate-800/40">
+              <th class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider py-2 px-3">Service</th>
+              <th class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider py-2 px-3 text-right">Current</th>
+              <th class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider py-2 px-3 text-right">Previous</th>
+              <th class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider py-2 px-3 text-right">Change</th>
+              <th class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider py-2 px-3 text-right">Risk</th>
+            </tr>
+          </thead>
+          <tbody id="service-trends-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Allocation -->
+  <div class="tab-content hidden space-y-6" id="tab-allocation" data-tab-content="allocation">
+    <div class="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-2xl p-5">
+      <div class="flex flex-wrap gap-1.5 text-[10px] font-semibold no-print mb-4" id="allocation-tabs">
+        <button class="px-3 py-1 bg-indigo-500 text-white rounded-xl shadow-sm" data-allocation="service">By Service</button>
+        <button class="px-3 py-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-allocation="region">By Region</button>
+        <button class="px-3 py-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-allocation="environment">By Environment</button>
+        <button class="px-3 py-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-allocation="team">By Team</button>
+        <button class="px-3 py-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-allocation="application">By Application</button>
+      </div>
+      <div id="allocation-bars" class="space-y-3"></div>
     </div>
   </div>
 
@@ -212,7 +322,7 @@ import EChart from './Charts/EChart.astro';
 </div>
 
 <script>
-  import type { AnalysisResults, Recommendation, Anomaly, ResourceDetail, Forecast } from '../lib/types';
+  import type { AnalysisResults, Recommendation, Anomaly, ResourceDetail, Forecast, TrendAnalysis } from '../lib/types';
 
   let currentData: AnalysisResults | null = null;
   let activeCategoryFilter = 'All';
@@ -251,9 +361,6 @@ import EChart from './Charts/EChart.astro';
     const { data, filename } = customEvent.detail;
     currentData = data;
 
-    const dashboardView = document.getElementById('dashboard-view');
-    dashboardView?.classList.remove('hidden');
-
     // Provider pill
     const pill = document.getElementById('report-provider-pill');
     if (pill) {
@@ -268,6 +375,9 @@ import EChart from './Charts/EChart.astro';
     if (filenameEl) filenameEl.textContent = filename;
 
     // Render all sections
+    renderInsights(data.insights);
+    renderPeriodComparison(data.periodComparison);
+    renderTrendPanel(data.trend);
     renderDailyTrendChart();
     renderServiceAllocationChart();
     renderRegionalChart();
@@ -275,6 +385,8 @@ import EChart from './Charts/EChart.astro';
     renderAnomalies(data.anomalies);
     renderHiddenCosts(data.hiddenCosts);
     renderCostBreakdownTable();
+    renderEfficiency(data.efficiency, data.serviceTrends);
+    renderAllocation(data.allocation);
     renderRecommendations();
     renderHealthStatus(data.resourceHealth);
     renderForecasts(data.forecasts);
@@ -311,6 +423,12 @@ import EChart from './Charts/EChart.astro';
       if (el) el.textContent = '0';
     });
 
+    // Reset trend panel
+    ['trend-direction-badge', 'trend-daily-change', 'trend-weekly-change', 'trend-burn-rate', 'trend-volatility', 'trend-peak', 'trend-low'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '--';
+    });
+
     // Reset tabs back to Overview
     const tabButtons = document.querySelectorAll('#dashboard-tabs button');
     tabButtons.forEach(b => {
@@ -321,6 +439,225 @@ import EChart from './Charts/EChart.astro';
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     const overviewTab = document.getElementById('tab-overview');
     if (overviewTab) overviewTab.classList.remove('hidden');
+  });
+
+  // ── Trend Panel ──────────────────────────────────────────────
+  function renderTrendPanel(trend: TrendAnalysis) {
+    const badge = document.getElementById('trend-direction-badge');
+    const dailyChange = document.getElementById('trend-daily-change');
+    const weeklyChange = document.getElementById('trend-weekly-change');
+    const burnRate = document.getElementById('trend-burn-rate');
+    const volatility = document.getElementById('trend-volatility');
+    const peak = document.getElementById('trend-peak');
+    const low = document.getElementById('trend-low');
+
+    if (badge) {
+      const labels = { increasing: 'Trending Up', decreasing: 'Trending Down', stable: 'Stable' };
+      const colors = {
+        increasing: 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400',
+        decreasing: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
+        stable: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+      };
+      badge.textContent = labels[trend.direction] || '--';
+      badge.className = `px-2.5 py-1 text-[9px] font-bold rounded-lg uppercase tracking-wider ${colors[trend.direction] || colors.stable}`;
+    }
+    if (dailyChange) {
+      const sign = trend.dailyChangeRate >= 0 ? '+' : '';
+      dailyChange.textContent = `${sign}${fmt(trend.dailyChangeRate)}/day`;
+      dailyChange.className = `text-sm font-bold ${trend.dailyChangeRate > 0 ? 'text-rose-500 dark:text-rose-400' : trend.dailyChangeRate < 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`;
+    }
+    if (weeklyChange) {
+      const sign = trend.weeklyChangeRate >= 0 ? '+' : '';
+      weeklyChange.textContent = `${sign}${fmt(trend.weeklyChangeRate)}/wk`;
+      weeklyChange.className = `text-sm font-bold ${trend.weeklyChangeRate > 0 ? 'text-rose-500 dark:text-rose-400' : trend.weeklyChangeRate < 0 ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100'}`;
+    }
+    if (burnRate) burnRate.textContent = fmt(trend.burnRate);
+    if (volatility) {
+      volatility.textContent = `${trend.volatility}%`;
+      volatility.className = `text-sm font-bold ${trend.volatility > 40 ? 'text-rose-500 dark:text-rose-400' : trend.volatility > 25 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100'}`;
+    }
+    if (peak) peak.textContent = `${fmt(trend.peakCost)} on ${trend.peakDay.substring(5)}`;
+    if (low) low.textContent = `${fmt(trend.lowestCost)} on ${trend.lowestDay.substring(5)}`;
+  }
+
+  // ── Insights Rendering ──────────────────────────────────────
+  function renderInsights(insights: any[]) {
+    const container = document.getElementById('insights-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (insights.length === 0) {
+      container.innerHTML = '<div class="text-center py-12 text-slate-400 dark:text-slate-600 text-[10px]">No insights generated for this report.</div>';
+      return;
+    }
+
+    const typeConfig: Record<string, { border: string; bg: string; icon: string; badge: string }> = {
+      critical: { border: 'border-l-rose-500', bg: 'bg-rose-50/10 dark:bg-rose-950/10', icon: '<svg class="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>', badge: 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400' },
+      warning: { border: 'border-l-amber-500', bg: 'bg-amber-50/10 dark:bg-amber-950/10', icon: '<svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' },
+      info: { border: 'border-l-indigo-500', bg: 'bg-indigo-50/10 dark:bg-indigo-950/10', icon: '<svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>', badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400' },
+      success: { border: 'border-l-emerald-500', bg: 'bg-emerald-50/10 dark:bg-emerald-950/10', icon: '<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' }
+    };
+
+    insights.forEach(ins => {
+      const cfg = typeConfig[ins.type] || typeConfig.info;
+      const card = document.createElement('div');
+      card.className = `p-4 border-l-4 ${cfg.border} ${cfg.bg} rounded-xl space-y-2`;
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start space-x-2">
+            ${cfg.icon}
+            <div class="space-y-1">
+              <h4 class="text-[11px] font-bold text-slate-800 dark:text-slate-100">${ins.title}</h4>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">${ins.message}</p>
+            </div>
+          </div>
+          <div class="flex flex-col items-end space-y-1 flex-shrink-0">
+            ${ins.metric ? `<span class="px-1.5 py-0.5 text-[8px] font-bold rounded ${cfg.badge}">${ins.metric}</span>` : ''}
+            ${ins.impact ? `<span class="text-[8px] text-slate-400 dark:text-slate-500">${ins.impact}</span>` : ''}
+          </div>
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+
+  // ── Period Comparison Rendering ──────────────────────────────
+  function renderPeriodComparison(pc: any) {
+    const grid = document.getElementById('period-comparison-grid');
+    if (!grid) return;
+
+    const items = [
+      { label: 'Current Period', value: fmt(pc.currentPeriod.spend), sub: `${pc.currentPeriod.days} days` },
+      { label: 'Prior Period', value: fmt(pc.normalizedComparison), sub: `normalized to ${pc.currentPeriod.days} days` },
+      { label: 'Change', value: `${pc.changePercentage > 0 ? '+' : ''}${pc.changePercentage.toFixed(1)}%`, sub: `${fmt(Math.abs(pc.changeAbsolute))} ${pc.direction === 'up' ? 'over' : 'under'}`, color: pc.direction === 'up' ? 'text-rose-500 dark:text-rose-400' : pc.direction === 'down' ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100' },
+      { label: 'Daily Avg', value: `${fmt(pc.dailyAvgCurrent)}/day`, sub: `vs ${fmt(pc.dailyAvgPrevious)}/day prior` }
+    ];
+
+    grid.innerHTML = items.map(item => `
+      <div class="space-y-1">
+        <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase">${item.label}</span>
+        <span class="text-sm font-bold ${item.color || 'text-slate-800 dark:text-slate-100'}">${item.value}</span>
+        <span class="text-[9px] text-slate-400 dark:text-slate-500 block">${item.sub}</span>
+      </div>
+    `).join('');
+  }
+
+  // ── Efficiency Rendering ──────────────────────────────────────
+  function renderEfficiency(eff: any, serviceTrends: any[]) {
+    const costPerDay = document.getElementById('eff-cost-per-day');
+    const costPerService = document.getElementById('eff-cost-per-service');
+    const concentration = document.getElementById('eff-concentration');
+    const gini = document.getElementById('eff-gini');
+    const giniLabel = document.getElementById('eff-gini-label');
+    const paretoLabel = document.getElementById('eff-pareto-label');
+
+    if (costPerDay) costPerDay.textContent = fmt(eff.costPerDay);
+    if (costPerService) costPerService.textContent = fmt(eff.costPerService);
+    if (concentration) {
+      concentration.textContent = `${eff.topServiceConcentration.toFixed(0)}%`;
+      concentration.className = `text-xl font-extrabold font-display ${eff.topServiceConcentration > 70 ? 'text-rose-500 dark:text-rose-400' : eff.topServiceConcentration > 50 ? 'text-amber-500 dark:text-amber-400' : 'text-slate-800 dark:text-slate-100'}`;
+    }
+    if (gini) {
+      gini.textContent = eff.giniCoefficient.toFixed(3);
+      const giniDesc = eff.giniCoefficient > 0.6 ? 'Highly concentrated' : eff.giniCoefficient > 0.4 ? 'Moderately concentrated' : 'Evenly distributed';
+      if (giniLabel) giniLabel.textContent = giniDesc;
+    }
+    if (paretoLabel) paretoLabel.textContent = `${eff.paretoprinciple.toFixed(0)}% of services account for 80% of spend`;
+
+    // Pareto chart
+    if (currentData) {
+      const services = Object.entries(currentData.breakdown.service)
+        .sort((a, b) => b[1] - a[1]);
+      const total = services.reduce((s, [, v]) => s + v, 0);
+      let cumulative = 0;
+      const cumulativePct = services.map(([, v]) => {
+        cumulative += v;
+        return Math.round((cumulative / total) * 100);
+      });
+
+      window.initChart('pareto-chart', {
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: services.map(([name]) => name.length > 15 ? name.substring(0, 12) + '...' : name),
+          axisLine: { lineStyle: { color: '#64748b' } },
+          axisLabel: { rotate: 30, fontSize: 9 }
+        },
+        yAxis: [
+          { type: 'value', name: 'Cost ($)', splitLine: { lineStyle: { type: 'dashed', color: 'rgba(148,163,184,0.1)' } } },
+          { type: 'value', name: 'Cumulative %', max: 100, splitLine: { show: false } }
+        ],
+        series: [
+          { name: 'Cost', type: 'bar', barWidth: '50%', itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] }, data: services.map(([, v]) => Math.round(v)) },
+          { name: 'Cumulative', type: 'line', yAxisIndex: 1, smooth: true, itemStyle: { color: '#f59e0b' }, lineStyle: { width: 2 }, symbol: 'none', data: cumulativePct }
+        ]
+      });
+    }
+
+    // Service trends table
+    const tbody = document.getElementById('service-trends-table');
+    if (tbody && serviceTrends) {
+      tbody.innerHTML = '';
+      serviceTrends.forEach(t => {
+        const riskColor = t.riskLevel === 'high' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400'
+          : t.riskLevel === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
+          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400';
+        const arrow = t.direction === 'up' ? '<svg class="w-3 h-3 text-rose-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>'
+          : t.direction === 'down' ? '<svg class="w-3 h-3 text-emerald-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>'
+          : '<svg class="w-3 h-3 text-slate-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"></path></svg>';
+        const changeColor = t.changePercent > 10 ? 'text-rose-500' : t.changePercent < -10 ? 'text-emerald-500' : 'text-slate-500';
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors';
+        tr.innerHTML = `
+          <td class="text-[10px] font-semibold text-slate-700 dark:text-slate-300 py-2 px-3">${t.service}</td>
+          <td class="text-[10px] font-bold text-slate-800 dark:text-slate-100 py-2 px-3 text-right">${fmt(t.currentCost)}</td>
+          <td class="text-[10px] text-slate-500 dark:text-slate-400 py-2 px-3 text-right">${fmt(t.previousCost)}</td>
+          <td class="text-[10px] font-bold py-2 px-3 text-right ${changeColor}">${arrow} ${t.changePercent > 0 ? '+' : ''}${t.changePercent.toFixed(1)}%</td>
+          <td class="py-2 px-3 text-right"><span class="px-1.5 py-0.5 text-[8px] font-bold rounded uppercase ${riskColor}">${t.riskLevel}</span></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  // ── Allocation Rendering ──────────────────────────────────────
+  let activeAllocationType = 'service';
+  function renderAllocation(allocation: any) {
+    const container = document.getElementById('allocation-bars');
+    if (!container) return;
+
+    const data = allocation[`by${activeAllocationType.charAt(0).toUpperCase() + activeAllocationType.slice(1)}`] || [];
+    const maxCost = data.length > 0 ? data[0].cost : 1;
+
+    container.innerHTML = data.slice(0, 15).map((entry: any) => {
+      const widthPct = (entry.cost / maxCost) * 100;
+      const trendArrow = entry.trend === 'up' ? '<svg class="w-2.5 h-2.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>'
+        : entry.trend === 'down' ? '<svg class="w-2.5 h-2.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>'
+        : '';
+      return `
+        <div class="flex items-center space-x-3">
+          <span class="text-[10px] font-semibold text-slate-700 dark:text-slate-300 w-32 truncate" title="${entry.name}">${entry.name}</span>
+          <div class="flex-1 bg-slate-100 dark:bg-slate-800 h-4 rounded-full overflow-hidden">
+            <div class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width: ${widthPct}%"></div>
+          </div>
+          <span class="text-[10px] font-bold text-slate-800 dark:text-slate-100 w-20 text-right">${fmt(entry.cost)}</span>
+          <span class="text-[9px] text-slate-400 dark:text-slate-500 w-12 text-right">${entry.percentage.toFixed(1)}%</span>
+          ${trendArrow}
+        </div>`;
+    }).join('');
+  }
+
+  // Allocation tab switching
+  const allocTabs = document.querySelectorAll('#allocation-tabs button');
+  allocTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      allocTabs.forEach(t => {
+        t.className = 'px-3 py-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl';
+      });
+      tab.className = 'px-3 py-1 bg-indigo-500 text-white rounded-xl shadow-sm';
+      activeAllocationType = tab.getAttribute('data-allocation') || 'service';
+      if (currentData) renderAllocation(currentData.allocation);
+    });
   });
 
   // ── Trend Chart ────────────────────────────────────────────────
@@ -494,12 +831,15 @@ import EChart from './Charts/EChart.astro';
             <span class="w-2 h-2 rounded-full ${badgeColor}"></span>
             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase">${anom.service}</span>
           </div>
-          <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">${anom.date}</span>
+          <div class="flex items-center space-x-2">
+            <span class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">Score: ${anom.anomalyScore}</span>
+            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500">${anom.date}</span>
+          </div>
         </div>
         <p class="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed">${anom.description}</p>
         <div class="flex justify-between items-center text-[9px] text-slate-400 dark:text-slate-500 pt-1">
           <span>Region: <b class="text-slate-600 dark:text-slate-300">${anom.region}</b></span>
-          <span class="text-slate-700 dark:text-slate-300">Spike: <b class="text-rose-500 dark:text-rose-400">+${anom.percentageSpike}%</b></span>
+          <span class="text-slate-700 dark:text-slate-300">Spike: <b class="text-rose-500 dark:text-rose-400">+${anom.percentageSpike}%</b> | Avg: ${fmt(anom.previousAverage)}</span>
         </div>`;
       return card;
     };
@@ -676,12 +1016,14 @@ import EChart from './Charts/EChart.astro';
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="px-1.5 py-0.5 text-[8px] font-bold uppercase rounded ${catColor}">${rec.category}</span>
               <span class="px-1.5 py-0.5 text-[8px] font-bold uppercase rounded ${impactColor}">Impact: ${rec.impact}</span>
+              <span class="px-1.5 py-0.5 text-[8px] font-bold uppercase rounded bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400">ROI: ${rec.roiMonths === 0 ? 'Immediate' : rec.roiMonths + 'mo'}</span>
             </div>
             <h4 class="text-[11px] font-bold text-slate-800 dark:text-slate-100 pt-1">${rec.title}</h4>
             <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">${rec.description}</p>
           </div>
-          <div class="text-right flex-shrink-0">
+          <div class="text-right flex-shrink-0 space-y-1">
             <span class="text-sm font-extrabold text-emerald-500 dark:text-emerald-400">${fmt(rec.potentialSavings)}<span class="text-[8px] font-normal text-slate-400 block">/mo savings</span></span>
+            <span class="text-[9px] font-semibold text-slate-400 dark:text-slate-500">${fmt(rec.annualSavings)}/yr</span>
           </div>
         </div>
         <div class="bg-slate-50/50 dark:bg-slate-950/20 rounded-xl p-3 space-y-2 cursor-pointer rec-expand-area" data-target="${recId}">
@@ -832,8 +1174,6 @@ import EChart from './Charts/EChart.astro';
   // ── Reset Button ───────────────────────────────────────────────
   document.getElementById('reset-btn')?.addEventListener('click', () => {
     window.dispatchEvent(new Event('reset-dashboard'));
-    const dashboardView = document.getElementById('dashboard-view');
-    dashboardView?.classList.add('hidden');
     const uploadArea = document.getElementById('upload-area-container');
     if (uploadArea) uploadArea.classList.remove('hidden');
   });

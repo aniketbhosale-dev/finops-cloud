@@ -7,9 +7,9 @@ export interface BillingRecord {
   service: string;
   cost: number; // in USD
   region: string;
-  account: string; // AWS Account ID, Azure Subscription ID, GCP Project ID
+  account: string;
   resourceId: string;
-  resourceGroup: string; // Azure resource group, GCP project, or AWS resource tag
+  resourceGroup: string;
   environment: 'Production' | 'Development' | 'Staging' | 'Test' | 'Unknown';
   team: string;
   application: string;
@@ -23,9 +23,11 @@ export interface Anomaly {
   region: string;
   cost: number;
   previousAverage: number;
-  percentageSpike: number; // e.g., 150 (for +150% increase)
+  percentageSpike: number;
   severity: 'low' | 'medium' | 'high';
   description: string;
+  anomalyScore: number;
+  dailyImpact: number; // dollar impact per day of anomaly
 }
 
 export interface Recommendation {
@@ -36,18 +38,21 @@ export interface Recommendation {
   resourceId: string;
   provider: CloudProvider;
   impact: 'low' | 'medium' | 'high';
-  potentialSavings: number; // monthly savings in USD
+  potentialSavings: number;
   effort: 'easy' | 'moderate' | 'hard';
   actionableSteps: string[];
+  roiMonths: number;
+  annualSavings: number;
+  priority: number; // 1-10, higher = more urgent
 }
 
 export interface ResourceDetail {
   id: string;
   name: string;
-  type: string; // e.g. "Virtual Machine", "Storage Volume", "Static IP", "NAT Gateway"
+  type: string;
   provider: CloudProvider;
-  cost: number; // monthly cost of resource
-  metric: string; // explanation of metric triggering this status
+  cost: number;
+  metric: string;
   status: 'idle' | 'zombie' | 'underutilized' | 'overutilized';
 }
 
@@ -61,7 +66,7 @@ export interface ResourceHealthStatus {
 export interface Forecast {
   period: 'EOM' | 'EOQ' | 'Yearly';
   predictedCost: number;
-  confidence: number; // 0 to 100
+  confidence: number;
   lowerBound: number;
   upperBound: number;
 }
@@ -75,6 +80,88 @@ export interface HiddenCostDetail {
   provider: CloudProvider;
 }
 
+export interface TrendAnalysis {
+  direction: 'increasing' | 'decreasing' | 'stable';
+  dailyChangeRate: number;
+  weeklyChangeRate: number;
+  volatility: number;
+  burnRate: number;
+  peakDay: string;
+  peakCost: number;
+  lowestDay: string;
+  lowestCost: number;
+  momentum: number; // -1 to 1, negative = decelerating, positive = accelerating
+}
+
+export interface PeriodComparison {
+  currentPeriod: { label: string; spend: number; days: number };
+  previousPeriod: { label: string; spend: number; days: number };
+  changeAbsolute: number;
+  changePercentage: number;
+  direction: 'up' | 'down' | 'flat';
+  dailyAvgCurrent: number;
+  dailyAvgPrevious: number;
+  normalizedComparison: number; // previous period scaled to same number of days for fair comparison
+}
+
+export interface CostEfficiency {
+  costPerDay: number;
+  costPerService: number;
+  costPerRegion: number;
+  topServiceConcentration: number; // % of total spend from top 3 services
+  paretoprinciple: number; // % of services accounting for 80% of spend
+  giniCoefficient: number; // 0-1, measures spend distribution inequality
+}
+
+export interface WasteAnalysis {
+  totalWaste: number;
+  wasteRatio: number; // waste as % of total spend
+  zombieCost: number;
+  idleCost: number;
+  underutilizedCost: number;
+  overprovisionedCost: number; // estimated from underutilized resources
+  recoverableSavings: number; // immediate savings from eliminating waste
+  wasteByCategory: Record<string, number>;
+  wasteByProvider: Record<string, number>;
+}
+
+export interface ServiceTrend {
+  service: string;
+  currentCost: number;
+  previousCost: number;
+  changePercent: number;
+  direction: 'up' | 'down' | 'flat';
+  dailyAvg: number;
+  trendSlope: number;
+  riskLevel: 'low' | 'medium' | 'high';
+}
+
+export interface CostAllocation {
+  byService: AllocationEntry[];
+  byRegion: AllocationEntry[];
+  byEnvironment: AllocationEntry[];
+  byTeam: AllocationEntry[];
+  byApplication: AllocationEntry[];
+}
+
+export interface AllocationEntry {
+  name: string;
+  cost: number;
+  percentage: number;
+  trend: 'up' | 'down' | 'stable';
+  dailyAvg: number;
+}
+
+export interface ExecutiveInsight {
+  id: string;
+  type: 'critical' | 'warning' | 'info' | 'success';
+  category: 'spend' | 'anomaly' | 'waste' | 'efficiency' | 'forecast' | 'recommendation';
+  title: string;
+  message: string;
+  metric?: string;
+  impact?: string;
+}
+
 export interface AnalysisResults {
   provider: CloudProvider;
   totalSpend: number;
@@ -85,8 +172,15 @@ export interface AnalysisResults {
   estimatedEomCost: number;
   budgetLimit: number;
   budgetUtilization: number;
-  finopsScore: number; // 0 - 100
-  optimizationScore: number; // 0 - 100
+  finopsScore: number;
+  optimizationScore: number;
+  trend: TrendAnalysis;
+  periodComparison: PeriodComparison;
+  efficiency: CostEfficiency;
+  waste: WasteAnalysis;
+  serviceTrends: ServiceTrend[];
+  allocation: CostAllocation;
+  insights: ExecutiveInsight[];
   breakdown: {
     service: Record<string, number>;
     region: Record<string, number>;

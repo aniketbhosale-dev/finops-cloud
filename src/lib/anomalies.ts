@@ -28,19 +28,49 @@ export class AnomalyDetector {
         const currentDate = dates[i];
         const currentCost = dailyCosts[currentDate];
 
-        // Compute running average of previous days (up to 7 days prior)
-        const previousDays = dates.slice(Math.max(0, i - 7), i);
-        const sum = previousDays.reduce((acc, d) => acc + dailyCosts[d], 0);
-        const average = sum / previousDays.length;
+        // Compute weighted moving average (recent days weighted more)
+        const lookbackDays = Math.min(i, 7);
+        const previousDays = dates.slice(i - lookbackDays, i);
+        let weightedSum = 0;
+        let weightTotal = 0;
+        for (let j = 0; j < previousDays.length; j++) {
+          const weight = j + 1; // more recent = higher weight
+          weightedSum += dailyCosts[previousDays[j]] * weight;
+          weightTotal += weight;
+        }
+        const weightedAverage = weightTotal > 0 ? weightedSum / weightTotal : 0;
 
-        // Thresholds for anomaly: spike of > 200% (3x) and absolute increase of > $30
-        if (average > 1 && currentCost > average * 3 && currentCost - average > 30) {
+        // Simple average for comparison
+        const simpleSum = previousDays.reduce((acc, d) => acc + dailyCosts[d], 0);
+        const simpleAverage = simpleSum / previousDays.length;
+
+        // Use weighted average as baseline
+        const average = weightedAverage;
+
+        // Dynamic thresholds based on service cost magnitude
+        const absoluteThreshold = Math.max(20, average * 0.3); // at least $20 or 30% of avg
+        const spikeThreshold = 2.0; // 200% of average (2x)
+
+        if (average > 0.5 && currentCost > average * spikeThreshold && (currentCost - average) > absoluteThreshold) {
           const spikePercent = Math.round(((currentCost - average) / average) * 100);
-          
+          const costImpact = currentCost - average;
+
+          // Compute weighted anomaly score (0-100)
+          // Factors: spike magnitude (40%), cost impact (35%), frequency in data (25%)
+          const magnitudeScore = Math.min(40, (spikePercent / 10)); // 400% spike = max 40pts
+          const impactScore = Math.min(35, (costImpact / 50)); // $50+ impact = max 35pts
+          const frequencyInData = dates.filter(d => {
+            const c = dailyCosts[d];
+            return c > average * spikeThreshold;
+          }).length;
+          const frequencyScore = Math.min(25, frequencyInData * 8); // each occurrence = 8pts
+          const anomalyScore = Math.round(magnitudeScore + impactScore + frequencyScore);
+
+          // Determine severity based on weighted score
           let severity: 'low' | 'medium' | 'high' = 'medium';
-          if (currentCost - average > 200 && spikePercent > 500) {
+          if (anomalyScore >= 60 || (costImpact > 200 && spikePercent > 400)) {
             severity = 'high';
-          } else if (currentCost - average < 50) {
+          } else if (anomalyScore < 30 || costImpact < 50) {
             severity = 'low';
           }
 
@@ -57,19 +87,18 @@ export class AnomalyDetector {
             previousAverage: Math.round(average * 100) / 100,
             percentageSpike: spikePercent,
             severity,
-            description: `Sudden spending spike detected on service ${service} in ${region}. Cost jumped to $${currentCost.toFixed(2)} compared to an average of $${average.toFixed(2)} (+${spikePercent}%).`
+            anomalyScore,
+            dailyImpact: Math.round(costImpact * 100) / 100,
+            description: `Spending spike on ${service} in ${region}: $${currentCost.toFixed(2)} vs avg $${average.toFixed(2)} (+${spikePercent}%). Impact: $${costImpact.toFixed(2)} over baseline.`
           });
         }
       }
     });
 
-    // Sort anomalies: latest date first, then high severity first
+    // Sort anomalies: highest score first, then latest date
     return anomalies.sort((a, b) => {
-      if (a.date !== b.date) {
-        return b.date.localeCompare(a.date);
-      }
-      const sevWeight = { high: 3, medium: 2, low: 1 };
-      return sevWeight[b.severity] - sevWeight[a.severity];
+      if (b.anomalyScore !== a.anomalyScore) return b.anomalyScore - a.anomalyScore;
+      return b.date.localeCompare(a.date);
     });
   }
 
