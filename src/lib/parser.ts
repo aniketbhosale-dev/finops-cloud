@@ -108,7 +108,7 @@ function mapEnvironment(envStr: string): 'Production' | 'Development' | 'Staging
 }
 
 export class CostReportParser {
-  static detectProvider(headers: string[]): CloudProvider {
+  static detectProvider(headers: string[], provider?: CloudProvider): CloudProvider {
     const lowercaseHeaders = headers.map(h => h.toLowerCase());
     
     // AWS specific columns
@@ -147,10 +147,15 @@ export class CostReportParser {
     if (lowercaseHeaders.some(h => h.includes('azure') || h.includes('subscription'))) return 'azure';
     if (lowercaseHeaders.some(h => h.includes('gcp') || h.includes('project_id') || h.includes('google'))) return 'gcp';
     
+    // If provider is explicitly provided, use it
+    if (provider) {
+      return provider;
+    }
+    
     throw new Error('Could not identify cloud provider from billing report headers.');
   }
 
-  static parse(csvString: string): BillingRecord[] {
+  static parse(csvString: string, provider?: CloudProvider): BillingRecord[] {
     const rows = parseCSV(csvString);
     if (rows.length < 2) {
       throw new Error('Billing report is empty or missing data rows.');
@@ -158,9 +163,12 @@ export class CostReportParser {
 
     const headers = rows[0];
     const dataRows = rows.slice(1);
-    const provider = this.detectProvider(headers);
+    const normalizedProvider = provider?.toLowerCase() as CloudProvider | undefined;
+    const detectedProvider = this.detectProvider(headers, normalizedProvider);
 
-    switch (provider) {
+    console.log('[parser] provider:', provider, '→ normalized:', normalizedProvider, '→ detected:', detectedProvider);
+
+    switch (detectedProvider) {
       case 'aws':
         return this.normalizeAWS(dataRows, headers);
       case 'azure':

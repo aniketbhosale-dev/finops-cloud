@@ -9,6 +9,10 @@ export const POST: APIRoute = async ({ request }) => {
   try {
     const data = await request.formData();
     const csvFile = data.get('file') as File;
+    const rawProvider = data.get('provider') as string;
+    const cloudProvider = rawProvider?.toLowerCase() as 'aws' | 'azure' | 'gcp' | undefined;
+
+    console.log('[analyze] rawProvider:', rawProvider, '→ cloudProvider:', cloudProvider);
 
     if (!csvFile) {
       return new Response(JSON.stringify({ error: 'No file uploaded. Please select a valid CSV billing report.' }), {
@@ -20,7 +24,7 @@ export const POST: APIRoute = async ({ request }) => {
     const csvText = await csvFile.text();
 
     // 1. Parse CSV & Normalize
-    const records = CostReportParser.parse(csvText);
+    const records = CostReportParser.parse(csvText, cloudProvider as 'aws' | 'azure' | 'gcp');
 
     // 2. Perform core cost aggregations & breakdowns
     const analysis = CostAnalyzer.analyze(records);
