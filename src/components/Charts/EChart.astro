@@ -1,0 +1,148 @@
+---
+interface Props {
+  id: string;
+  class?: string;
+  style?: string;
+}
+
+const { id, class: className = '', style = 'height: 350px; width: 100%;' } = Astro.props;
+---
+
+<div id={id} class={`echart-container transition-opacity duration-300 ${className}`} style={style}></div>
+
+<script>
+  import * as echarts from 'echarts';
+
+  // Extend window interface in client bundle
+  declare global {
+    interface Window {
+      initChart: (elementId: string, options: any) => any;
+      destroyChart: (elementId: string) => void;
+      charts: Record<string, any>;
+    }
+  }
+
+  window.charts = window.charts || {};
+
+  window.initChart = (elementId, options) => {
+    const el = document.getElementById(elementId);
+    if (!el) return null;
+
+    // Dispose old chart instance if it exists
+    let existingChart = echarts.getInstanceByDom(el);
+    if (existingChart) {
+      existingChart.dispose();
+    }
+
+    const isDark = document.documentElement.classList.contains('dark');
+    
+    // Initialize chart with optional dark theme config
+    const chart = echarts.init(el, isDark ? 'dark' : undefined, {
+      renderer: 'canvas',
+      useDirtyRect: true
+    });
+
+    // Custom dark/light theme adjustments
+    const baseOptions = {
+      backgroundColor: 'transparent',
+      textStyle: {
+        fontFamily: 'Inter, system-ui, sans-serif'
+      },
+      legend: {
+        textStyle: {
+          color: isDark ? '#94a3b8' : '#475569'
+        }
+      },
+      tooltip: {
+        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+        borderColor: isDark ? '#334155' : '#e2e8f0',
+        textStyle: {
+          color: isDark ? '#f8fafc' : '#0f172a'
+        }
+      }
+    };
+
+    // Deep merge options
+    const mergedOptions = {
+      ...baseOptions,
+      ...options,
+      textStyle: {
+        ...baseOptions.textStyle,
+        ...(options.textStyle || {})
+      },
+      legend: {
+        ...baseOptions.legend,
+        ...(options.legend || {})
+      },
+      tooltip: {
+        ...baseOptions.tooltip,
+        ...(options.tooltip || {})
+      }
+    };
+
+    chart.setOption(mergedOptions);
+    window.charts[elementId] = chart;
+
+    // Responsive resize support
+    const resizeObserver = new ResizeObserver(() => {
+      if (chart && !chart.isDisposed()) {
+        chart.resize();
+      }
+    });
+    resizeObserver.observe(el);
+
+    return chart;
+  };
+
+  window.destroyChart = (elementId) => {
+    const el = document.getElementById(elementId);
+    if (el) {
+      const existingChart = echarts.getInstanceByDom(el);
+      if (existingChart) {
+        existingChart.dispose();
+      }
+      delete window.charts[elementId];
+    }
+  };
+
+  // Sync theme switch changes with charts
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === 'class') {
+        const isDark = document.documentElement.classList.contains('dark');
+        
+        Object.entries(window.charts).forEach(([id, chart]) => {
+          const el = document.getElementById(id);
+          if (el && chart && !chart.isDisposed()) {
+            const options = chart.getOption();
+            
+            // Dispose and re-init under new theme context
+            chart.dispose();
+            
+            const newChart = echarts.init(el, isDark ? 'dark' : undefined);
+            options.backgroundColor = 'transparent';
+            
+            // Apply text colors
+            if (options.legend && options.legend[0]) {
+              options.legend[0].textStyle = {
+                color: isDark ? '#94a3b8' : '#475569'
+              };
+            }
+            if (options.tooltip && options.tooltip[0]) {
+              options.tooltip[0].backgroundColor = isDark ? '#1e293b' : '#ffffff';
+              options.tooltip[0].borderColor = isDark ? '#334155' : '#e2e8f0';
+              options.tooltip[0].textStyle = {
+                color: isDark ? '#f8fafc' : '#0f172a'
+              };
+            }
+            
+            newChart.setOption(options);
+            window.charts[id] = newChart;
+          }
+        });
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, { attributes: true });
+</script>

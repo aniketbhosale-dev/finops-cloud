@@ -1,0 +1,822 @@
+---
+// DashboardView.astro - Interactive Multi-Cloud FinOps Dashboard
+import EChart from './Charts/EChart.astro';
+---
+
+<div id="dashboard-view" class="hidden space-y-8 animate-fade-in pb-16">
+  <!-- Dashboard Top Bar / Controls -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/40 dark:bg-[#111827]/40 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/40 rounded-3xl p-6 shadow-sm no-print">
+    <div>
+      <div class="flex items-center space-x-3">
+        <span class="px-2.5 py-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-950/50 rounded-lg uppercase tracking-wider" id="report-provider-pill">
+          AWS
+        </span>
+        <h2 class="text-2xl font-bold font-display text-slate-800 dark:text-slate-100" id="report-title-label">
+          Billing Report Analysis
+        </h2>
+      </div>
+      <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+        Source File: <span id="report-filename" class="font-medium text-slate-600 dark:text-slate-400">billing.csv</span>
+      </p>
+    </div>
+    
+    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+      <button 
+        id="export-pdf"
+        class="flex-1 sm:flex-none px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 text-xs font-semibold rounded-xl flex items-center justify-center space-x-2 transition-all hover-scale"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <span>Export PDF Report</span>
+      </button>
+
+      <button 
+        id="export-json"
+        class="flex-1 sm:flex-none px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl flex items-center justify-center space-x-2 transition-all hover-scale"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        <span>Download JSON</span>
+      </button>
+
+      <button 
+        id="reset-btn"
+        class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100/70 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 text-xs font-semibold rounded-xl flex items-center justify-center space-x-2 transition-all"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        <span>Reset</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Charts Grid Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Trend Analysis (2 Columns wide) -->
+    <div class="lg:col-span-2 glass-panel rounded-3xl p-6">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100">
+            Daily Cost Trend
+          </h3>
+          <p class="text-xs text-slate-400 dark:text-slate-500">
+            Cost progression over the billing cycle
+          </p>
+        </div>
+        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 text-xs font-semibold no-print">
+          <button class="px-3 py-1.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm rounded-lg" id="chart-trend-area">Area</button>
+          <button class="px-3 py-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400" id="chart-trend-bar">Bar</button>
+        </div>
+      </div>
+      <EChart id="trend-chart" style="height: 350px;" />
+    </div>
+
+    <!-- Cost Breakdown by Service (1 Column) -->
+    <div class="glass-panel rounded-3xl p-6">
+      <div>
+        <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100">
+          Service Allocation
+        </h3>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">
+          Cost breakdown by cloud services
+        </p>
+      </div>
+      <EChart id="service-chart" style="height: 350px;" />
+    </div>
+  </div>
+
+  <!-- Secondary Charts Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Regional Spend -->
+    <div class="glass-panel rounded-3xl p-6">
+      <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100 mb-1">
+        Geographical Distribution
+      </h3>
+      <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">
+        Spending breakdown across cloud regions
+      </p>
+      <EChart id="region-chart" style="height: 320px;" />
+    </div>
+
+    <!-- Environment Breakdown -->
+    <div class="glass-panel rounded-3xl p-6">
+      <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100 mb-1">
+        Environment Allocation
+      </h3>
+      <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">
+        Spending categorized by tags (Production, Dev, QA, Staging)
+      </p>
+      <EChart id="environment-chart" style="height: 320px;" />
+    </div>
+  </div>
+
+  <!-- Anomalies and Hidden Charges Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Cost Anomaly Alerts -->
+    <div class="glass-panel rounded-3xl p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-200/50 dark:border-slate-800/40 pb-3">
+        <div>
+          <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100 flex items-center">
+            <svg class="w-5 h-5 text-rose-500 mr-2 animate-pulse" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+            Cost Anomaly Detection
+          </h3>
+          <p class="text-xs text-slate-400 dark:text-slate-500">
+            Automated scanning flags sudden daily cost spikes
+          </p>
+        </div>
+        <span class="px-2 py-1 text-xs font-semibold text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-950/30 rounded-lg" id="anomaly-count-pill">
+          0 Alerts
+        </span>
+      </div>
+      
+      <!-- Anomalies List -->
+      <div class="space-y-3 overflow-y-auto max-h-[350px] pr-2 no-scrollbar" id="anomalies-list">
+        <!-- Filled dynamically -->
+        <div class="text-center py-8 text-slate-400 dark:text-slate-600 text-xs">
+          No cost anomalies detected in this billing cycle.
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden Cost Scanner -->
+    <div class="glass-panel rounded-3xl p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-200/50 dark:border-slate-800/40 pb-3">
+        <div>
+          <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100 flex items-center">
+            <svg class="w-5 h-5 text-amber-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            Hidden Charges Audit
+          </h3>
+          <p class="text-xs text-slate-400 dark:text-slate-500">
+            Scans for commonly overlooked utility and idle cloud fees
+          </p>
+        </div>
+        <span class="px-2 py-1 text-xs font-semibold text-slate-700 bg-slate-100 dark:text-slate-300 dark:bg-slate-800 rounded-lg" id="hidden-costs-sum">
+          $0
+        </span>
+      </div>
+
+      <!-- Hidden costs list -->
+      <div class="space-y-3 overflow-y-auto max-h-[350px] pr-2 no-scrollbar" id="hidden-costs-list">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Optimization Recommendations & Health Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Recommendations (2 Columns wide) -->
+    <div class="lg:col-span-2 glass-panel rounded-3xl p-6 space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/50 dark:border-slate-800/40 pb-4">
+        <div>
+          <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100">
+            Cost Optimization Proposals
+          </h3>
+          <p class="text-xs text-slate-400 dark:text-slate-500">
+            Actionable strategies and commitments to reduce billing waste
+          </p>
+        </div>
+        <!-- Search bar -->
+        <input 
+          type="text" 
+          id="rec-search-input"
+          placeholder="Filter recommendations..." 
+          class="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs rounded-xl focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 w-full sm:w-48 no-print"
+        />
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="flex flex-wrap gap-1.5 text-xs font-semibold no-print" id="rec-tabs">
+        <button class="px-3.5 py-1.5 bg-indigo-500 text-white rounded-xl shadow-sm" data-category="All">All</button>
+        <button class="px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-category="Compute">Compute</button>
+        <button class="px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-category="Storage">Storage</button>
+        <button class="px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-category="Networking">Network</button>
+        <button class="px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-category="Database">Database</button>
+        <button class="px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl" data-category="Security">Security</button>
+      </div>
+
+      <!-- Recommendation items container -->
+      <div class="space-y-4 max-h-[480px] overflow-y-auto pr-2 no-scrollbar" id="recommendations-container">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+
+    <!-- Resource Health Status -->
+    <div class="glass-panel rounded-3xl p-6 space-y-4">
+      <div>
+        <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100">
+          Resource Lifecycle Health
+        </h3>
+        <p class="text-xs text-slate-400 dark:text-slate-500">
+          State auditing for zombie, idle, or oversized nodes
+        </p>
+      </div>
+
+      <!-- Health summary stats -->
+      <div class="grid grid-cols-2 gap-4 pb-4 border-b border-slate-200/50 dark:border-slate-800/40">
+        <div class="bg-rose-50/50 dark:bg-rose-950/10 p-3 rounded-2xl">
+          <span class="text-rose-500 dark:text-rose-400 text-2xl font-bold font-display" id="zombie-count">0</span>
+          <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5">Zombie Items</p>
+        </div>
+        <div class="bg-amber-50/50 dark:bg-amber-950/10 p-3 rounded-2xl">
+          <span class="text-amber-500 dark:text-amber-400 text-2xl font-bold font-display" id="idle-count">0</span>
+          <p class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5">Idle Resources</p>
+        </div>
+      </div>
+
+      <!-- Health Items List -->
+      <div class="space-y-3 overflow-y-auto max-h-[320px] pr-2 no-scrollbar" id="health-items-list">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Forecasting Section -->
+  <div class="glass-panel rounded-3xl p-6 space-y-6">
+    <div>
+      <h3 class="text-lg font-bold font-display text-slate-800 dark:text-slate-100">
+        Cost Forecasting Engine
+      </h3>
+      <p class="text-xs text-slate-400 dark:text-slate-500">
+        Projected spend trends mapped to month, quarter, and year commit boundaries
+      </p>
+    </div>
+
+    <!-- Forecast Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="forecasts-cards-grid">
+      <!-- Filled dynamically -->
+    </div>
+  </div>
+</div>
+
+<script>
+  import type { AnalysisResults, Recommendation, Anomaly, ResourceDetail, Forecast } from '../lib/types';
+
+  let currentData: AnalysisResults | null = null;
+  let activeCategoryFilter = 'All';
+  let activeSearchQuery = '';
+
+  const fmt = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+
+  window.addEventListener('report-processed', (e: Event) => {
+    const customEvent = e as CustomEvent<{ data: AnalysisResults, filename: string }>;
+    const { data, filename } = customEvent.detail;
+    currentData = data;
+
+    // Show View
+    const dashboardView = document.getElementById('dashboard-view');
+    dashboardView?.classList.remove('hidden');
+
+    // Set top details
+    const pill = document.getElementById('report-provider-pill');
+    const filenameEl = document.getElementById('report-filename');
+    if (pill) {
+      pill.textContent = data.provider.toUpperCase();
+      pill.className = 'px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider ';
+      if (data.provider === 'aws') pill.classList.add('text-orange-700', 'bg-orange-50', 'dark:text-orange-400', 'dark:bg-orange-950/50');
+      else if (data.provider === 'azure') pill.classList.add('text-blue-700', 'bg-blue-50', 'dark:text-blue-400', 'dark:bg-blue-950/50');
+      else if (data.provider === 'gcp') pill.classList.add('text-blue-700', 'bg-blue-50', 'dark:text-blue-400', 'dark:bg-blue-950/50');
+    }
+    if (filenameEl) filenameEl.textContent = filename;
+
+    // Render components
+    renderDailyTrendChart();
+    renderServiceAllocationChart();
+    renderRegionalChart();
+    renderEnvironmentChart();
+    renderAnomalies(data.anomalies);
+    renderHiddenCosts(data.hiddenCosts);
+    renderRecommendations();
+    renderHealthStatus(data.resourceHealth);
+    renderForecasts(data.forecasts);
+  });
+
+  // Render Daily Cost Trend Chart
+  let currentTrendChartType = 'area';
+  function renderDailyTrendChart() {
+    if (!currentData) return;
+    const dailySpend = currentData.dailySpend;
+    const sortedDates = Object.keys(dailySpend).sort();
+    const costs = sortedDates.map(d => Math.round(dailySpend[d] * 100) / 100);
+
+    const isArea = currentTrendChartType === 'area';
+
+    const options = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'line' }
+      },
+      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: sortedDates.map(d => d.substring(5)), // MM-DD
+        axisLine: { lineStyle: { color: '#64748b' } }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Spend ($)',
+        splitLine: { lineStyle: { type: 'dashed', color: 'rgba(148, 163, 184, 0.1)' } }
+      },
+      series: [{
+        name: 'Daily Cost',
+        type: isArea ? 'line' : 'bar',
+        smooth: true,
+        itemStyle: { color: '#6366f1' },
+        areaStyle: isArea ? {
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(99, 102, 241, 0.35)' },
+              { offset: 1, color: 'rgba(99, 102, 241, 0)' }
+            ]
+          }
+        } : undefined,
+        data: costs
+      }]
+    };
+
+    window.initChart('trend-chart', options);
+  }
+
+  // Bind trend type toggle buttons
+  const btnArea = document.getElementById('chart-trend-area');
+  const btnBar = document.getElementById('chart-trend-bar');
+
+  btnArea?.addEventListener('click', () => {
+    currentTrendChartType = 'area';
+    btnArea.className = 'px-3 py-1.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm rounded-lg';
+    if (btnBar) btnBar.className = 'px-3 py-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400';
+    renderDailyTrendChart();
+  });
+
+  btnBar?.addEventListener('click', () => {
+    currentTrendChartType = 'bar';
+    btnBar.className = 'px-3 py-1.5 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm rounded-lg';
+    if (btnArea) btnArea.className = 'px-3 py-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400';
+    renderDailyTrendChart();
+  });
+
+  // Render Service allocation Donut
+  function renderServiceAllocationChart() {
+    if (!currentData) return;
+    const services = currentData.breakdown.service;
+    const data = Object.entries(services)
+      .map(([name, value]) => ({ name, value: Math.round(value) }))
+      .sort((a, b) => b.value - a.value);
+
+    const options = {
+      series: [{
+        name: 'Service Spend',
+        type: 'pie',
+        radius: ['45%', '70%'],
+        center: ['50%', '50%'],
+        avoidLabelOverlap: true,
+        padAngle: 3,
+        itemStyle: {
+          borderRadius: 8
+        },
+        label: {
+          show: false,
+          position: 'center'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold',
+            formatter: '{b}\n{d}%'
+          }
+        },
+        data
+      }]
+    };
+
+    window.initChart('service-chart', options);
+  }
+
+  // Render Geographical breakdown treemap
+  function renderRegionalChart() {
+    if (!currentData) return;
+    const regions = currentData.breakdown.region;
+    const data = Object.entries(regions)
+      .map(([name, value]) => ({ name, value: Math.round(value) }))
+      .sort((a, b) => b.value - a.value);
+
+    const options = {
+      tooltip: { trigger: 'item' },
+      series: [{
+        name: 'Region',
+        type: 'treemap',
+        visibleMinArea: 300,
+        label: { show: true, formatter: '{b}\n${c}' },
+        upperLabel: { show: false },
+        itemStyle: {
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.1)'
+        },
+        levels: [
+          {
+            itemStyle: {
+              borderGapWidth: 2,
+              gapWidth: 2
+            }
+          }
+        ],
+        data
+      }]
+    };
+
+    window.initChart('region-chart', options);
+  }
+
+  // Render Environment bar chart
+  function renderEnvironmentChart() {
+    if (!currentData) return;
+    const envs = currentData.breakdown.environment;
+    // Map keys to display
+    const rawKeys = Object.keys(envs);
+    const rawVals = Object.values(envs).map(v => Math.round(v));
+
+    const options = {
+      grid: { left: '3%', right: '4%', bottom: '3%', top: '5%', containLabel: true },
+      xAxis: {
+        type: 'value',
+        splitLine: { lineStyle: { type: 'dashed', color: 'rgba(148, 163, 184, 0.1)' } }
+      },
+      yAxis: {
+        type: 'category',
+        data: rawKeys,
+        axisLine: { lineStyle: { color: '#64748b' } }
+      },
+      series: [{
+        name: 'Spend',
+        type: 'bar',
+        barWidth: '50%',
+        itemStyle: {
+          color: '#10b981',
+          borderRadius: [0, 4, 4, 0]
+        },
+        data: rawVals
+      }]
+    };
+
+    window.initChart('environment-chart', options);
+  }
+
+  // Render Anomalies
+  function renderAnomalies(anomalies: Anomaly[]) {
+    const list = document.getElementById('anomalies-list');
+    const countPill = document.getElementById('anomaly-count-pill');
+    
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (countPill) {
+      countPill.textContent = `${anomalies.length} Alert${anomalies.length === 1 ? '' : 's'}`;
+      if (anomalies.length > 0) {
+        countPill.className = 'px-2 py-1 text-xs font-semibold text-rose-600 bg-rose-50 dark:text-rose-400 dark:bg-rose-950/30 rounded-lg animate-pulse';
+      } else {
+        countPill.className = 'px-2 py-1 text-xs font-semibold text-slate-500 bg-slate-50 dark:text-slate-400 dark:bg-slate-800 rounded-lg';
+      }
+    }
+
+    if (anomalies.length === 0) {
+      list.innerHTML = `
+        <div class="text-center py-12 text-slate-400 dark:text-slate-600 text-xs">
+          No cost anomalies detected in this billing cycle.
+        </div>`;
+      return;
+    }
+
+    anomalies.forEach(anom => {
+      const card = document.createElement('div');
+      card.className = 'p-4 border rounded-2xl flex flex-col space-y-2 transition-all duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 ';
+      
+      if (anom.severity === 'high') {
+        card.classList.add('border-rose-100', 'bg-rose-50/15', 'dark:border-rose-950/40', 'dark:bg-rose-950/10');
+      } else if (anom.severity === 'medium') {
+        card.classList.add('border-amber-100', 'bg-amber-50/15', 'dark:border-amber-950/40', 'dark:bg-amber-950/10');
+      } else {
+        card.classList.add('border-slate-200', 'bg-slate-50/10', 'dark:border-slate-800', 'dark:bg-slate-900/10');
+      }
+
+      const badgeColor = anom.severity === 'high' ? 'bg-rose-500' : anom.severity === 'medium' ? 'bg-amber-500' : 'bg-slate-400';
+
+      card.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full ${badgeColor}"></span>
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">${anom.service}</span>
+          </div>
+          <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">${anom.date}</span>
+        </div>
+        <p class="text-xs text-slate-600 dark:text-slate-300">${anom.description}</p>
+        <div class="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 pt-1">
+          <span>Region: <b>${anom.region}</b></span>
+          <span class="text-slate-700 dark:text-slate-300">Spike: <b class="text-rose-500 dark:text-rose-400">+${anom.percentageSpike}%</b></span>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  // Render Hidden Costs
+  function renderHiddenCosts(hiddenCosts: any[]) {
+    const list = document.getElementById('hidden-costs-list');
+    const sumEl = document.getElementById('hidden-costs-sum');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // Group hidden costs by Category
+    const grouped: Record<string, { service: string, cost: number, details: string }> = {};
+    let totalHidden = 0;
+
+    hiddenCosts.forEach(h => {
+      totalHidden += h.cost;
+      if (!grouped[h.category]) {
+        grouped[h.category] = { service: h.service, cost: 0, details: h.details };
+      }
+      grouped[h.category].cost += h.cost;
+    });
+
+    if (sumEl) sumEl.textContent = `${fmt(totalHidden)} hidden fees`;
+
+    if (hiddenCosts.length === 0) {
+      list.innerHTML = `
+        <div class="text-center py-12 text-slate-400 dark:text-slate-600 text-xs">
+          No hidden fees flagged in this report.
+        </div>`;
+      return;
+    }
+
+    // Sort categories by cost
+    const sortedCategories = Object.entries(grouped).sort((a, b) => b[1].cost - a[1].cost);
+
+    sortedCategories.forEach(([category, data]) => {
+      const row = document.createElement('div');
+      row.className = 'p-3 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl flex items-center justify-between transition-all duration-200 hover:shadow-sm';
+      row.innerHTML = `
+        <div class="space-y-0.5 flex-1 pr-4">
+          <div class="flex items-center space-x-2">
+            <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200">${category}</h4>
+            <span class="text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-md font-semibold">${data.service}</span>
+          </div>
+          <p class="text-[10px] text-slate-400 dark:text-slate-500 leading-normal">${data.details}</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${fmt(data.cost)}</span>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  // Filter and Search recommendations
+  function renderRecommendations() {
+    const container = document.getElementById('recommendations-container');
+    if (!container || !currentData) return;
+    container.innerHTML = '';
+
+    const recs = currentData.recommendations;
+    
+    // Filter recommendations
+    const filtered = recs.filter(rec => {
+      const categoryMatches = activeCategoryFilter === 'All' || rec.category === activeCategoryFilter;
+      const searchMatches = activeSearchQuery === '' || 
+        rec.title.toLowerCase().includes(activeSearchQuery.toLowerCase()) || 
+        rec.description.toLowerCase().includes(activeSearchQuery.toLowerCase()) || 
+        rec.category.toLowerCase().includes(activeSearchQuery.toLowerCase());
+      return categoryMatches && searchMatches;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-16 text-slate-400 dark:text-slate-600 text-sm">
+          No recommendations match your filters.
+        </div>`;
+      return;
+    }
+
+    filtered.forEach(rec => {
+      const card = document.createElement('div');
+      card.className = 'p-5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-3xl space-y-4 hover:shadow-md transition-shadow duration-300';
+      
+      const impactPillColor = rec.impact === 'high' ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400' : rec.impact === 'medium' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400' : 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+      const effortPillColor = rec.effort === 'easy' ? 'text-emerald-500' : rec.effort === 'moderate' ? 'text-amber-500' : 'text-rose-500';
+
+      const stepsHtml = rec.actionableSteps.map(step => `
+        <li class="flex items-start text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+          <svg class="w-3.5 h-3.5 mr-1.5 text-indigo-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4"></path></svg>
+          ${step}
+        </li>
+      `).join('');
+
+      card.innerHTML = `
+        <div class="flex justify-between items-start gap-4">
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase rounded">${rec.category}</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded ${impactPillColor}">Impact: ${rec.impact}</span>
+            </div>
+            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 pt-1">${rec.title}</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">${rec.description}</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-lg font-extrabold text-emerald-500 dark:text-emerald-400">${fmt(rec.potentialSavings)}<span class="text-[10px] font-normal text-slate-400 block">/ mo savings</span></span>
+          </div>
+        </div>
+
+        <div class="bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl p-4 space-y-2.5">
+          <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Action Plan (Effort: <span class="font-bold ${effortPillColor}">${rec.effort.toUpperCase()}</span>)</span>
+          <ul class="space-y-1.5">
+            ${stepsHtml}
+          </ul>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // Filter Tabs Event Listeners
+  const recTabs = document.querySelectorAll('#rec-tabs button');
+  recTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Toggle colors
+      recTabs.forEach(t => {
+        t.className = 'px-3.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl';
+      });
+      tab.className = 'px-3.5 py-1.5 bg-indigo-500 text-white rounded-xl shadow-sm';
+      activeCategoryFilter = tab.getAttribute('data-category') || 'All';
+      renderRecommendations();
+    });
+  });
+
+  // Search input change listener
+  const recSearch = document.getElementById('rec-search-input') as HTMLInputElement;
+  recSearch?.addEventListener('input', () => {
+    activeSearchQuery = recSearch.value;
+    renderRecommendations();
+  });
+
+  // Render Resource Health list
+  function renderHealthStatus(health: any) {
+    const list = document.getElementById('health-items-list');
+    const zCount = document.getElementById('zombie-count');
+    const iCount = document.getElementById('idle-count');
+
+    if (!list) return;
+    list.innerHTML = '';
+
+    const allHealthItems: ResourceDetail[] = [
+      ...health.zombie,
+      ...health.idle,
+      ...health.underutilized
+    ];
+
+    if (zCount) zCount.textContent = String(health.zombie.length);
+    if (iCount) iCount.textContent = String(health.idle.length);
+
+    if (allHealthItems.length === 0) {
+      list.innerHTML = `
+        <div class="text-center py-12 text-slate-400 dark:text-slate-600 text-xs">
+          All resources look active and optimized.
+        </div>`;
+      return;
+    }
+
+    allHealthItems.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'p-3 border border-slate-200/50 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl flex flex-col space-y-1.5 transition-all duration-200 hover:shadow-sm';
+      
+      const badgeStyle = item.status === 'zombie' 
+        ? 'bg-rose-50 text-rose-500 dark:bg-rose-950/20 dark:text-rose-400' 
+        : item.status === 'idle'
+          ? 'bg-amber-50 text-amber-500 dark:bg-amber-950/20 dark:text-amber-400'
+          : 'bg-indigo-50 text-indigo-500 dark:bg-indigo-950/20 dark:text-indigo-400';
+
+      row.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div class="space-y-0.5">
+            <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate max-w-[200px]" title="${item.id}">${item.name}</h4>
+            <span class="text-[9px] text-slate-400 dark:text-slate-500">${item.type} • <b>${item.id.substring(0, 12)}</b></span>
+          </div>
+          <span class="px-2 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider ${badgeStyle}">
+            ${item.status}
+          </span>
+        </div>
+        <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-normal border-t border-slate-100 dark:border-slate-800 pt-1.5">${item.metric}</p>
+        <div class="flex justify-between items-center text-[10px] pt-1">
+          <span class="text-slate-400 dark:text-slate-500">Provider: <b>${item.provider.toUpperCase()}</b></span>
+          <span class="font-semibold text-slate-700 dark:text-slate-300">Cost: <b>${fmt(item.cost)}/mo</b></span>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  // Render Forecasts
+  function renderForecasts(forecasts: Forecast[]) {
+    const grid = document.getElementById('forecasts-cards-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    forecasts.forEach(f => {
+      const card = document.createElement('div');
+      card.className = 'glass-panel rounded-3xl p-5 relative overflow-hidden transition-all duration-300 hover:shadow-md';
+      
+      const label = f.period === 'EOM' ? 'End of Month' : f.period === 'EOQ' ? 'End of Quarter' : 'End of Year';
+      const indicatorColor = f.confidence >= 85 ? 'bg-emerald-500' : f.confidence >= 70 ? 'bg-amber-500' : 'bg-slate-400';
+
+      card.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">${label}</span>
+            <div class="flex items-center space-x-1.5 text-[10px] font-semibold text-slate-500">
+              <span class="w-1.5 h-1.5 rounded-full ${indicatorColor}"></span>
+              <span>Conf: ${f.confidence}%</span>
+            </div>
+          </div>
+          <h4 class="text-2xl font-bold font-display text-slate-800 dark:text-slate-100">
+            ${fmt(f.predictedCost)}
+          </h4>
+          <div class="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800/80 pt-2.5">
+            <span>95% confidence range:</span>
+            <span class="font-medium text-slate-600 dark:text-slate-300">${fmt(f.lowerBound)} — ${fmt(f.upperBound)}</span>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Exporters
+
+  // 1. JSON Export
+  document.getElementById('export-json')?.addEventListener('click', () => {
+    if (!currentData) return;
+    const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finops-report-${currentData.provider}-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // 2. PDF Print Report Trigger
+  document.getElementById('export-pdf')?.addEventListener('click', () => {
+    window.print();
+  });
+
+  // Reset Button
+  document.getElementById('reset-btn')?.addEventListener('click', () => {
+    // Dispatch reset event
+    const event = new Event('reset-dashboard');
+    window.dispatchEvent(event);
+
+    // Hide Dashboard
+    const dashboardView = document.getElementById('dashboard-view');
+    dashboardView?.classList.add('hidden');
+
+    // Show landing
+    const uploadArea = document.getElementById('upload-area-container');
+    if (uploadArea) uploadArea.classList.remove('hidden');
+    
+    // Clear elements
+    window.destroyChart('trend-chart');
+    window.destroyChart('service-chart');
+    window.destroyChart('region-chart');
+    window.destroyChart('environment-chart');
+  });
+</script>
+
+<style>
+  /* Custom print overrides for premium PDF reports */
+  @media print {
+    body {
+      background: white !important;
+      color: black !important;
+      padding: 0 !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .glass-panel {
+      background: white !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: none !important;
+      break-inside: avoid;
+    }
+    #dashboard-view {
+      display: block !important;
+      padding: 0 !important;
+    }
+    .echart-container {
+      page-break-inside: avoid;
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+</style>

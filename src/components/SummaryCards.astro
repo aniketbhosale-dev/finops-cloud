@@ -1,0 +1,222 @@
+---
+// SummaryCards.astro - Executive summaries, budgets, and scores
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="summary-cards-container">
+  <!-- MTD Spend Card -->
+  <div class="glass-panel rounded-3xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-lg">
+    <div class="flex justify-between items-start">
+      <div class="space-y-2">
+        <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          Month-to-Date Cost
+        </p>
+        <h3 class="text-3xl font-bold font-display text-slate-800 dark:text-slate-100" id="mtd-cost">
+          $0.00
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center">
+          <span class="inline-block w-2 h-2 rounded-full mr-2 bg-indigo-500" id="provider-badge"></span>
+          <span id="provider-label">Active Provider</span>
+        </p>
+      </div>
+      <div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 rounded-2xl">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+    <!-- Decorative subtle grid -->
+    <div class="absolute bottom-0 right-0 opacity-10 pointer-events-none -z-10 translate-x-4 translate-y-4">
+      <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="8"></circle>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Forecast EOM Card -->
+  <div class="glass-panel rounded-3xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-lg">
+    <div class="flex justify-between items-start">
+      <div class="space-y-2">
+        <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          End-of-Month Forecast
+        </p>
+        <h3 class="text-3xl font-bold font-display text-slate-800 dark:text-slate-100" id="eom-forecast">
+          $0.00
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center" id="forecast-confidence-wrapper">
+          <svg class="w-3.5 h-3.5 mr-1 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+          Confidence: <span class="font-semibold text-slate-700 dark:text-slate-300 ml-1" id="forecast-confidence">0%</span>
+        </p>
+      </div>
+      <div class="p-3 bg-purple-50 dark:bg-purple-950/40 text-purple-500 rounded-2xl">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Budget Utilization Card -->
+  <div class="glass-panel rounded-3xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-lg">
+    <div class="flex justify-between items-start mb-3">
+      <div class="space-y-1">
+        <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          Budget Utilization
+        </p>
+        <div class="flex items-baseline space-x-1.5">
+          <span class="text-2xl font-bold font-display text-slate-800 dark:text-slate-100" id="budget-percent">0%</span>
+          <span class="text-xs text-slate-500 dark:text-slate-400">
+            of <span id="budget-limit">$0.00</span>
+          </span>
+        </div>
+      </div>
+      <div class="p-3 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-2xl" id="budget-icon-container">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+      </div>
+    </div>
+    <!-- Progress Bar -->
+    <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+      <div class="h-full rounded-full transition-all duration-500" id="budget-progress-bar" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <!-- Scores Card -->
+  <div class="glass-panel rounded-3xl p-6 relative overflow-hidden transition-all duration-300 hover:shadow-lg">
+    <div class="flex justify-between items-center h-full">
+      <!-- FinOps Score -->
+      <div class="flex flex-col items-center justify-center flex-1 border-r border-slate-200/60 dark:border-slate-800/60">
+        <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">FinOps Score</span>
+        <div class="relative flex items-center justify-center">
+          <!-- Dial Gauge placeholder or elegant text score -->
+          <div class="text-4xl font-extrabold font-display text-indigo-500 dark:text-indigo-400" id="finops-score-num">
+            0
+          </div>
+        </div>
+        <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1" id="finops-grade">Excellent</span>
+      </div>
+
+      <!-- Optimization Score -->
+      <div class="flex flex-col items-center justify-center flex-1">
+        <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Cost Savings</span>
+        <div class="text-4xl font-extrabold font-display text-emerald-500 dark:text-emerald-400" id="savings-est">
+          $0
+        </div>
+        <span class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1">Est. Savings / mo</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import type { AnalysisResults } from '../lib/types';
+
+  // Format currency helper
+  const fmt = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+
+  window.addEventListener('report-processed', (e: Event) => {
+    const customEvent = e as CustomEvent<{ data: AnalysisResults }>;
+    const data = customEvent.detail.data;
+
+    // 1. MTD cost
+    const mtdCostEl = document.getElementById('mtd-cost');
+    if (mtdCostEl) mtdCostEl.textContent = fmt(data.currentMonthSpend);
+
+    // 2. Provider details
+    const providerBadge = document.getElementById('provider-badge');
+    const providerLabel = document.getElementById('provider-label');
+    if (providerBadge && providerLabel) {
+      providerLabel.textContent = data.provider.toUpperCase();
+      providerBadge.className = 'inline-block w-2.5 h-2.5 rounded-full mr-2';
+      
+      if (data.provider === 'aws') {
+        providerBadge.classList.add('bg-brand-aws');
+        providerLabel.classList.add('text-orange-500', 'font-semibold');
+      } else if (data.provider === 'azure') {
+        providerBadge.classList.add('bg-brand-azure');
+        providerLabel.classList.add('text-blue-500', 'font-semibold');
+      } else if (data.provider === 'gcp') {
+        providerBadge.classList.add('bg-brand-gcp');
+        providerLabel.classList.add('text-blue-600', 'font-semibold');
+      }
+    }
+
+    // 3. EOM Forecast
+    const eomForecastEl = document.getElementById('eom-forecast');
+    const forecast = data.forecasts.find(f => f.period === 'EOM');
+    if (eomForecastEl && forecast) {
+      eomForecastEl.textContent = fmt(forecast.predictedCost);
+      
+      const confLabel = document.getElementById('forecast-confidence');
+      if (confLabel) confLabel.textContent = `${forecast.confidence}%`;
+    }
+
+    // 4. Budget limits and bars
+    const budgetPercentEl = document.getElementById('budget-percent');
+    const budgetLimitEl = document.getElementById('budget-limit');
+    const budgetProgress = document.getElementById('budget-progress-bar');
+    const budgetIcon = document.getElementById('budget-icon-container');
+
+    if (budgetPercentEl && budgetLimitEl && budgetProgress) {
+      const util = data.budgetUtilization;
+      budgetPercentEl.textContent = `${Math.round(util)}%`;
+      budgetLimitEl.textContent = fmt(data.budgetLimit);
+      
+      budgetProgress.style.width = `${Math.min(util, 100)}%`;
+      
+      // Update color matching utilization
+      budgetProgress.className = 'h-full rounded-full transition-all duration-500 ';
+      if (util > 95) {
+        budgetProgress.classList.add('bg-rose-500');
+        if (budgetIcon) budgetIcon.className = 'p-3 bg-rose-50 dark:bg-rose-950/40 text-rose-500 rounded-2xl animate-bounce';
+      } else if (util > 75) {
+        budgetProgress.classList.add('bg-amber-500');
+        if (budgetIcon) budgetIcon.className = 'p-3 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-2xl';
+      } else {
+        budgetProgress.classList.add('bg-indigo-500');
+        if (budgetIcon) budgetIcon.className = 'p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500 rounded-2xl';
+      }
+    }
+
+    // 5. FinOps & Savings Scores
+    const finopsEl = document.getElementById('finops-score-num');
+    const finopsGrade = document.getElementById('finops-grade');
+    if (finopsEl && finopsGrade) {
+      const score = data.finopsScore;
+      finopsEl.textContent = String(score);
+      
+      // Colors & grade mapping
+      finopsEl.className = 'text-4xl font-extrabold font-display ';
+      if (score >= 90) {
+        finopsEl.classList.add('text-emerald-500', 'dark:text-emerald-400');
+        finopsGrade.textContent = 'EXCELLENT';
+        finopsGrade.className = 'text-[10px] font-bold text-emerald-500 uppercase tracking-wider mt-1';
+      } else if (score >= 70) {
+        finopsEl.classList.add('text-amber-500', 'dark:text-amber-400');
+        finopsGrade.textContent = 'HEALTHY';
+        finopsGrade.className = 'text-[10px] font-bold text-amber-500 uppercase tracking-wider mt-1';
+      } else {
+        finopsEl.classList.add('text-rose-500', 'dark:text-rose-400');
+        finopsGrade.textContent = 'ACTION REQUIRED';
+        finopsGrade.className = 'text-[10px] font-bold text-rose-500 uppercase tracking-wider mt-1';
+      }
+    }
+
+    const savingsEstEl = document.getElementById('savings-est');
+    if (savingsEstEl) {
+      const totalSavings = data.recommendations.reduce((sum, r) => sum + r.potentialSavings, 0);
+      savingsEstEl.textContent = fmt(totalSavings);
+    }
+  });
+
+  // Listen for reset events
+  window.addEventListener('reset-dashboard', () => {
+    const ids = ['mtd-cost', 'eom-forecast', 'budget-percent', 'budget-limit', 'finops-score-num', 'savings-est'];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = id.endsWith('num') || id.endsWith('percent') ? '0' : '$0';
+    });
+    const bar = document.getElementById('budget-progress-bar');
+    if (bar) bar.style.width = '0%';
+  });
+</script>
